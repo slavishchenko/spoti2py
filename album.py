@@ -80,4 +80,23 @@ class Album(BaseAlbum):
         self.genres = genres
         self.label = label
         self.populariy = popularity
-        self.track = tracks
+        self.tracks = tracks
+
+
+class Copyright:
+    def __init__(self, text, type) -> None:
+        self.text = text
+        self.type = type
+
+    def __str__(self) -> str:
+        return f"{self.text}"
+
+
+class Image:
+    def __init__(self, height, url, width):
+        self.height = height
+        self.url = url
+        self.width = width
+
+    def __str__(self) -> str:
+        return f"{self.height} x {self.width}"

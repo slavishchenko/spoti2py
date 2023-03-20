@@ -6,8 +6,8 @@ from urllib.parse import urlencode
 import requests
 
 from artist import Artist
-from song import Song
-from album import BaseAlbum, Album
+from track import Track
+from album import BaseAlbum, Album, Copyright, Image
 from parsers import SearchParser, AudioAnalysis
 
 
@@ -151,13 +151,17 @@ class Client(BaseClient):
         super().__init__(client_id, client_secret, *args, **kwargs)
 
     def get_album(self, _id):
-        return Album(**self.get_resource(_id, resource_type="albums"))
+        album = Album(**self.get_resource(_id, resource_type="albums"))
+        album.artists = Artist(**album.artists[0])
+        album.copyrights = [Copyright(**copy) for copy in album.copyrights]
+        album.images = [Image(**img) for img in album.images]
+        return album
 
     def get_artist(self, _id):
         return self.get_resource(_id, resource_type="artists")
 
     def get_track(self, _id):
-        track = Song(**self.get_resource(_id, resource_type="tracks"))
+        track = Track(**self.get_resource(_id, resource_type="tracks"))
         album = BaseAlbum(**track.album)
         artists = Artist(**track.artists[0])
         track.album = album
