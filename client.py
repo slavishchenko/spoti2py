@@ -7,7 +7,7 @@ import requests
 
 from artist import Artist
 from track import Track
-from album import BaseAlbum, Album, Copyright, Image
+from album import Album, Copyright, Image
 from parsers import SearchParser, AudioAnalysis
 
 
@@ -163,7 +163,7 @@ class Client(BaseClient):
 
     def get_track(self, _id):
         track = Track(**self.get_resource(_id, resource_type="tracks"))
-        album = BaseAlbum(**track.album)
+        album = Album(**track.album)
         artists = Artist(**track.artists[0])
         track.album = album
         track.artists = artists

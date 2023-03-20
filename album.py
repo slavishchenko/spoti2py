@@ -1,4 +1,4 @@
-class BaseAlbum:
+class Album:
     def __init__(
         self,
         album_group,
@@ -15,6 +15,12 @@ class BaseAlbum:
         total_tracks,
         type,
         uri,
+        external_ids=None,
+        copyrights=None,
+        genres=None,
+        label=None,
+        popularity=None,
+        tracks=None,
     ) -> None:
         self.album_group = album_group
         self.album_type = album_type
@@ -30,57 +36,15 @@ class BaseAlbum:
         self.total_tracks = total_tracks
         self.type = type
         self.uri = uri
-
-    def __str__(self):
-        return f"{self.name}"
-
-
-class Album(BaseAlbum):
-    def __init__(
-        self,
-        album_group,
-        album_type,
-        artists,
-        available_markets,
-        external_urls,
-        href,
-        id,
-        images,
-        name,
-        release_date,
-        release_date_precision,
-        total_tracks,
-        type,
-        uri,
-        external_ids,
-        copyrights,
-        genres,
-        label,
-        popularity,
-        tracks,
-    ) -> None:
-        super().__init__(
-            album_group,
-            album_type,
-            artists,
-            available_markets,
-            external_urls,
-            href,
-            id,
-            images,
-            name,
-            release_date,
-            release_date_precision,
-            total_tracks,
-            type,
-            uri,
-        )
         self.external_ids = external_ids
         self.copyrights = copyrights
         self.genres = genres
         self.label = label
         self.populariy = popularity
         self.tracks = tracks
+
+    def __str__(self):
+        return f"{self.name}"
 
 
 class Copyright:
