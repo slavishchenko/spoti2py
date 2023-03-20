@@ -1,3 +1,6 @@
+from tonality import Tonality
+
+
 class AudioAnalysis:
     def __init__(
         self,
@@ -54,3 +57,12 @@ class AudioAnalysis:
         self.synch_version = synch_version
         self.rhythmstring = rhythmstring
         self.rhythm_version = rhythm_version
+
+    @property
+    def tonality(self):
+        return Tonality(
+            key=self.key,
+            key_confidence=self.key_confidence,
+            mode=self.mode,
+            mode_confidence=self.mode_confidence,
+        )
