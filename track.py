@@ -38,4 +38,4 @@ class Track:
         self.uri = uri
 
     def __str__(self):
-        return f"{self.name}"
+        return f"{', '.join([artist.name for artist in self.artists])} - {self.name}"

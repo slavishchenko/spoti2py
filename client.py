@@ -9,7 +9,8 @@ from artist import Artist, Followers
 from track import Track
 from album import Album, Copyright
 from image import Image
-from parsers import SearchParser, AudioAnalysis
+from search import Search
+from parsers import AudioAnalysis
 
 
 logging.basicConfig(level=logging.WARNING)
@@ -99,7 +100,13 @@ class BaseClient:
         r = requests.get(lookup_url, headers=headers)
         if r.status_code not in range(200, 299):
             return {}
-        return SearchParser(r.json())
+
+        search_result = Search(**r.json()["tracks"])
+        search_result.items = [Track(**item) for item in search_result.items]
+        for item in search_result.items:
+            item.artists = [Artist(**artist) for artist in item.artists]
+            item.album = Album(**item.album)
+        return search_result
 
     def search(
         self,

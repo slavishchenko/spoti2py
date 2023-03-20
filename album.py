@@ -21,6 +21,7 @@ class Album:
         label=None,
         popularity=None,
         tracks=None,
+        is_playable=None,
     ) -> None:
         self.album_group = album_group
         self.album_type = album_type
@@ -42,6 +43,7 @@ class Album:
         self.label = label
         self.populariy = popularity
         self.tracks = tracks
+        self.is_playble = is_playable
 
     def __str__(self):
         return f"{self.name}"
