@@ -7,7 +7,8 @@ import requests
 
 from artist import Artist
 from track import Track
-from album import Album, Copyright, Image
+from album import Album, Copyright
+from image import Image
 from parsers import SearchParser, AudioAnalysis
 
 
