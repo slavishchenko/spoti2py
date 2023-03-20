@@ -5,12 +5,12 @@ from urllib.parse import urlencode
 
 import requests
 
+from audio_analysis import AudioAnalysis
 from artist import Artist, Followers
-from track import Track
 from album import Album, Copyright
 from image import Image
 from search import Search
-from parsers import AudioAnalysis
+from track import Track
 
 
 logging.basicConfig(level=logging.WARNING)
@@ -179,4 +179,6 @@ class Client(BaseClient):
         return track
 
     def get_audio_analysis(self, _id):
-        return AudioAnalysis(self.get_resource(_id, resource_type="audio-analysis"))
+        return AudioAnalysis(
+            **self.get_resource(_id, resource_type="audio-analysis")["track"]
+        )
