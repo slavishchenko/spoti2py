@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 import requests
 
-from artist import Artist
+from artist import Artist, Followers
 from track import Track
 from album import Album, Copyright
 from image import Image
@@ -160,7 +160,10 @@ class Client(BaseClient):
         return album
 
     def get_artist(self, _id):
-        return self.get_resource(_id, resource_type="artists")
+        artist = Artist(**self.get_resource(_id, resource_type="artists"))
+        artist.images = [Image(**img) for img in artist.images]
+        artist.followers = Followers(**artist.followers)
+        return artist
 
     def get_track(self, _id):
         track = Track(**self.get_resource(_id, resource_type="tracks"))

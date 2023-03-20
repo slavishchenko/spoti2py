@@ -25,3 +25,12 @@ class Artist:
 
     def __str__(self) -> str:
         return f"{self.name}"
+
+
+class Followers:
+    def __init__(self, href, total) -> None:
+        self.href = href
+        self.total = total
+
+    def __str__(self) -> str:
+        return f"{self.total}"
