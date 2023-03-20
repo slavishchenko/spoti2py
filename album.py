@@ -27,7 +27,7 @@ class BaseAlbum:
         self.name = name
         self.release_date = release_date
         self.release_date_precision = release_date_precision
-        self.total_track = total_tracks
+        self.total_tracks = total_tracks
         self.type = type
         self.uri = uri
 

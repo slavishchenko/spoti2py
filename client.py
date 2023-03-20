@@ -155,6 +155,7 @@ class Client(BaseClient):
         album.artists = Artist(**album.artists[0])
         album.copyrights = [Copyright(**copy) for copy in album.copyrights]
         album.images = [Image(**img) for img in album.images]
+        album.tracks = [Track(**song) for song in album.tracks["items"]]
         return album
 
     def get_artist(self, _id):

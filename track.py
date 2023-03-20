@@ -1,23 +1,23 @@
 class Track:
     def __init__(
         self,
-        album,
         artists,
         available_markets,
         disc_number,
         duration_ms,
         explicit,
-        external_ids,
         external_urls,
         href,
         id,
         is_local,
         name,
-        popularity,
         preview_url,
         track_number,
         type,
         uri,
+        album=None,
+        external_ids=None,
+        popularity=None,
     ) -> None:
         self.album = album
         self.artists = artists
