@@ -167,10 +167,8 @@ class Client(BaseClient):
 
     def get_track(self, _id):
         track = Track(**self.get_resource(_id, resource_type="tracks"))
-        album = Album(**track.album)
-        artists = Artist(**track.artists[0])
-        track.album = album
-        track.artists = artists
+        track.album = Album(**track.album)
+        track.artists = Artist(**track.artists[0])
         return track
 
     def get_audio_analysis(self, _id):
