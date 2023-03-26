@@ -1,22 +1,25 @@
 import base64
 import datetime
 import logging
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode
 
 import requests
 
-from audio_analysis import AudioAnalysis
-from artist import Artist, Followers
 from album import Album, Copyright
+from artist import Artist, Followers
+from audio_analysis import AudioAnalysis
 from image import Image
 from search import Search
 from track import Track
 
+logging.basicConfig(
+    filename="logs.log",
+    level=logging.INFO,
+    datefmt="%H:%M:%S",
+)
 
-logging.basicConfig(level=logging.WARNING)
 
-
-class BaseClient:
+class Client:
     API_URL = "https://api.spotify.com/"
     CURRENT_API_VERSION = "v1"
 
@@ -110,18 +113,19 @@ class BaseClient:
 
     def search(
         self,
-        query=None,
-        operator=None,
-        operator_query=None,
-        search_type: list = None,
-        limit=1,
-    ) -> dict:
+        query: str = None,
+        operator: str = None,
+        operator_query: str = None,
+        search_type: str | list = None,
+        limit: int = 1,
+    ) -> Search:
         """
-        Specify query you want you want to search for. e.g Metallica Master of Puppets.
+        query: string - Your search query.
 
         For more complex queries, specify operator (OR/NOT) and operator_query.
 
-        search_type is a list of item types to search across.
+        search_type is a string or a list of item types to search across.
+        Currently supported filters are album, artist, track.
         Search results include hits from all of the specified item types.
         >>> search_type = ['track', 'album']
         If you want to search for a specific item type,
@@ -153,12 +157,7 @@ class BaseClient:
 
         return self.base_search(query_params)
 
-
-class Client(BaseClient):
-    def __init__(self, client_id: str, client_secret: str, *args, **kwargs) -> None:
-        super().__init__(client_id, client_secret, *args, **kwargs)
-
-    def get_album(self, _id):
+    def get_album(self, _id: str) -> Album:
         album = Album(**self.get_resource(_id, resource_type="albums"))
         album.artists = Artist(**album.artists[0])
         album.copyrights = [Copyright(**copy) for copy in album.copyrights]
@@ -166,19 +165,19 @@ class Client(BaseClient):
         album.tracks = [Track(**song) for song in album.tracks["items"]]
         return album
 
-    def get_artist(self, _id):
+    def get_artist(self, _id: str) -> Artist:
         artist = Artist(**self.get_resource(_id, resource_type="artists"))
         artist.images = [Image(**img) for img in artist.images]
         artist.followers = Followers(**artist.followers)
         return artist
 
-    def get_track(self, _id):
+    def get_track(self, _id: str) -> Track:
         track = Track(**self.get_resource(_id, resource_type="tracks"))
         track.album = Album(**track.album)
         track.artists = Artist(**track.artists[0])
         return track
 
-    def get_audio_analysis(self, _id):
+    def get_audio_analysis(self, _id: str) -> AudioAnalysis:
         return AudioAnalysis(
             **self.get_resource(_id, resource_type="audio-analysis")["track"]
         )
