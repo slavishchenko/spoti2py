@@ -71,4 +71,7 @@ class Tonality:
         return (self.key_confidence + self.mode_confidence) / 2
 
     def __str__(self):
-        return self.chord
+        return f"{self.chord}"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.chord})"

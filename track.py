@@ -39,3 +39,6 @@ class Track:
 
     def __str__(self):
         return f"{', '.join([artist.name for artist in self.artists])} - {self.name}"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.name})"

@@ -1,5 +1,6 @@
 import base64
 import datetime
+import json
 import logging
 from urllib.parse import parse_qsl, urlencode
 
@@ -17,6 +18,10 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt="%H:%M:%S",
 )
+OPTIONS = {
+    "tracks": {"main": Track, "extra": {"artists": Artist, "album": Album}},
+    "albums": {"main": Album, "extra": {"artists": Artist, "images": Image}},
+}
 
 
 class Client:
@@ -96,6 +101,28 @@ class Client:
             return {}
         return r.json()
 
+    @staticmethod
+    def _get_json_lookup_key(query_params):
+        """Returns the key that will be used to parse json"""
+        return parse_qsl(query_params)[1][1] + "s"
+
+    @staticmethod
+    def _parse_search_items(lookup_key: str, search_result: dict = None) -> object:
+        classes = OPTIONS.get(lookup_key)
+        # Converts search result itmes from json object to corresponding Python class
+        # E.G search_result.items will be a list of Track objects
+        search_result.items = [classes["main"](**item) for item in search_result.items]
+        # item is an instance of a class; E.G Track/Album
+        for item in search_result.items:
+            for k, v in classes["extra"].items():
+                # k is a class attribute name
+                # v is a class instance
+                if isinstance(getattr(item, k), list):
+                    setattr(item, k, [v(**artist) for artist in getattr(item, k)])
+                else:
+                    setattr(item, k, v(**getattr(item, k)))
+        return search_result
+
     def base_search(self, query_params) -> dict:
         headers = self.get_resource_headers()
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
@@ -103,13 +130,11 @@ class Client:
         r = requests.get(lookup_url, headers=headers)
         if r.status_code not in range(200, 299):
             return {}
-
-        search_result = Search(**r.json()["tracks"])
-        search_result.items = [Track(**item) for item in search_result.items]
-        for item in search_result.items:
-            item.artists = [Artist(**artist) for artist in item.artists]
-            item.album = Album(**item.album)
-        return search_result
+        search_type = self._get_json_lookup_key(query_params)
+        search_result = Search(**r.json()[search_type])
+        return self._parse_search_items(
+            lookup_key=search_type, search_result=search_result
+        )
 
     def search(
         self,

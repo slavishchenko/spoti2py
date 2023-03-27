@@ -9,4 +9,7 @@ class Search:
         self.total = total
 
     def __str__(self):
-        return f'Search results for "{self.href}"'
+        return f"{self.items}"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.items})"
