@@ -1,4 +1,4 @@
-from tonality import Tonality
+from .tonality import Tonality
 
 
 class AudioAnalysis:

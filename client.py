@@ -1,17 +1,21 @@
 import base64
 import datetime
-import json
 import logging
 from urllib.parse import parse_qsl, urlencode
 
 import requests
 
-from album import Album, Copyright
-from artist import Artist, Followers
-from audio_analysis import AudioAnalysis
-from image import Image
-from search import Search
-from track import Track
+from exceptions import NoSearchQuery
+from models import (
+    Album,
+    Artist,
+    AudioAnalysis,
+    Copyright,
+    Followers,
+    Image,
+    Search,
+    Track,
+)
 
 logging.basicConfig(
     filename="logs.log",
@@ -25,6 +29,15 @@ OPTIONS = {
 
 
 class Client:
+    """
+    Client used to interact with the Spotify Web Api.
+
+    :param client_id: Your Client ID.
+    :type client_id: str
+    :param client_secret: Your Client Secret
+    :type client_secret: str
+    """
+
     API_URL = "https://api.spotify.com/"
     CURRENT_API_VERSION = "v1"
 
@@ -93,7 +106,12 @@ class Client:
         headers = {"Authorization": f"Bearer {access_token}"}
         return headers
 
-    def get_resource(self, lookup_id, resource_type="albums", version="v1") -> dict:
+    def get_resource(
+        self, lookup_id: str, resource_type: str = "albums", version: str = None
+    ) -> dict:
+        """Sends a GET request to Spotify API"""
+        if not version:
+            version = self.CURRENT_API_VERSION
         endpoint = f"{self.API_URL}{version}/{resource_type}/{lookup_id}"
         headers = self.get_resource_headers()
         r = requests.get(endpoint, headers=headers)
@@ -102,12 +120,15 @@ class Client:
         return r.json()
 
     @staticmethod
-    def _get_json_lookup_key(query_params):
+    def _get_json_lookup_key(query_params: str):
         """Returns the key that will be used to parse json"""
-        return parse_qsl(query_params)[1][1] + "s"
+        return f"{parse_qsl(query_params)[1][1]}s"
 
     @staticmethod
     def _parse_search_items(lookup_key: str, search_result: dict = None) -> object:
+        """
+        Parses JSON response
+        """
         classes = OPTIONS.get(lookup_key)
         # Converts search result itmes from json object to corresponding Python class
         # E.G search_result.items will be a list of Track objects
@@ -138,31 +159,25 @@ class Client:
 
     def search(
         self,
-        query: str = None,
+        query: str,
         operator: str = None,
         operator_query: str = None,
         search_type: str | list = None,
         limit: int = 1,
     ) -> Search:
         """
-        query: string - Your search query.
+        Get Spotify catalog information about albums, artists and tracks \
+        that match a keyword string.
 
-        For more complex queries, specify operator (OR/NOT) and operator_query.
-
-        search_type is a string or a list of item types to search across.
-        Currently supported filters are album, artist, track.
-        Search results include hits from all of the specified item types.
-        >>> search_type = ['track', 'album']
-        If you want to search for a specific item type,
-        you can set search_type to a string. E.g. search_type = 'track'.
-        Default value is track.
-
-        limit is the maximum number of results to return in each item type.
-            >= 0 <= 50
-            Default value is 1.
+        :param query: required - Your search query.
+        :param search_type: Optional item type to search accross. Defaults to "track".
+        :param limit: Maximum number of results to return. >= 0 <= 50. Default is 1.
+        :raise exceptions.NoSearchQuery: If no query is provided.
+        :return: :class:`~models.Search`
+        :rtype: object
         """
         if query == None:
-            raise Exception("A query is required")
+            raise NoSearchQuery("A query is required")
 
         if search_type is None:
             search_type = "track"
@@ -182,27 +197,55 @@ class Client:
 
         return self.base_search(query_params)
 
-    def get_album(self, _id: str) -> Album:
-        album = Album(**self.get_resource(_id, resource_type="albums"))
+    def get_album(self, id: str) -> Album:
+        """Get Spotify catalog information for a single album.
+
+        :param id: The Spotify ID of the album. Required."
+        :return: :class:`models.Album`
+        :rtype: object
+        """
+        album = Album(**self.get_resource(id, resource_type="albums"))
         album.artists = Artist(**album.artists[0])
         album.copyrights = [Copyright(**copy) for copy in album.copyrights]
         album.images = [Image(**img) for img in album.images]
         album.tracks = [Track(**song) for song in album.tracks["items"]]
         return album
 
-    def get_artist(self, _id: str) -> Artist:
-        artist = Artist(**self.get_resource(_id, resource_type="artists"))
+    def get_artist(self, id: str) -> Artist:
+        """
+        Get Spotify catalog information for a single artist identified by their unique Spotify ID.
+
+        :param id: The Spotify ID of the artist. Required."
+        :return: :class:`models.Artist`
+        :rtype: object
+        """
+        artist = Artist(**self.get_resource(id, resource_type="artists"))
         artist.images = [Image(**img) for img in artist.images]
         artist.followers = Followers(**artist.followers)
         return artist
 
-    def get_track(self, _id: str) -> Track:
-        track = Track(**self.get_resource(_id, resource_type="tracks"))
+    def get_track(self, id: str) -> Track:
+        """
+        Get Spotify catalog information for a single track identified by its unique Spotify ID.
+
+        :param id: The Spotify ID of the track. Required."
+        :return: :class:`models.Track`
+        :rtype: object
+        """
+        track = Track(**self.get_resource(id, resource_type="tracks"))
         track.album = Album(**track.album)
         track.artists = Artist(**track.artists[0])
         return track
 
-    def get_audio_analysis(self, _id: str) -> AudioAnalysis:
+    def get_audio_analysis(self, id: str) -> AudioAnalysis:
+        """
+        Get low-level audio analysis for a track in the Spotify catalog.
+        The audio analysis describes the track’s structure and musical content, including rhythm, pitch, and timbre.
+
+        :param id: The Spotify ID of the track. Required."
+        :return: :class:`models.AudioAnalysis`
+        :rtype: object
+        """
         return AudioAnalysis(
-            **self.get_resource(_id, resource_type="audio-analysis")["track"]
+            **self.get_resource(id, resource_type="audio-analysis")["track"]
         )
