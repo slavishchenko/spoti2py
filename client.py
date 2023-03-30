@@ -25,6 +25,7 @@ logging.basicConfig(
 OPTIONS = {
     "tracks": {"main": Track, "extra": {"artists": Artist, "album": Album}},
     "albums": {"main": Album, "extra": {"artists": Artist, "images": Image}},
+    "artists": {"main": Artist, "extra": {"images": Image, "followers": Followers}},
 }
 
 
@@ -33,9 +34,7 @@ class Client:
     Client used to interact with the Spotify Web Api.
 
     :param client_id: Your Client ID.
-    :type client_id: str
     :param client_secret: Your Client Secret
-    :type client_secret: str
     """
 
     API_URL = "https://api.spotify.com/"
@@ -109,7 +108,15 @@ class Client:
     def get_resource(
         self, lookup_id: str, resource_type: str = "albums", version: str = None
     ) -> dict:
-        """Sends a GET request to Spotify API"""
+        """
+        Sends a GET request to Spotify API
+
+        :param lookup_id: Spotify ID for the desired resource.
+        :param resource_type: Which resource you're trying to get. Default is: albums.
+        :param version: Spotify API version. Defaults to CURRENT_API_VERSION [v1].
+        :return: Spotify JSON response
+        :rtype: JSON
+        """
         if not version:
             version = self.CURRENT_API_VERSION
         endpoint = f"{self.API_URL}{version}/{resource_type}/{lookup_id}"
@@ -198,7 +205,8 @@ class Client:
         return self.base_search(query_params)
 
     def get_album(self, id: str) -> Album:
-        """Get Spotify catalog information for a single album.
+        """
+        Get Spotify catalog information for a single album.
 
         :param id: The Spotify ID of the album. Required."
         :return: :class:`models.Album`
