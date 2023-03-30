@@ -6,12 +6,12 @@ class Album:
     """
     Spotify Album model.
 
-    :param album_group: The field is present when getting an artist's albums. \
+    :param album_group: The field is present when getting an artist's albums.
                         This field represents relationship between the artist and the album.
                         Example values: "compilation"
                         Allowed values: "album", "single", "compilation", "appears_on".
     :param album_type: The type of the album.
-    :param artists: The artists of the album (simplified). \
+    :param artists: The artists of the album (simplified).
                     Each artist object includes a link in href to more detailed information about the artist.
     :param available_markets: The markets in which the album is available.
     :param external_urls: Known external URLs for this album.
