@@ -6,31 +6,31 @@ class Album:
     """
     Spotify Album model.
 
-    :param album_group: The field is present when getting an artist's albums.
+    :ivar album_group: The field is present when getting an artist's albums.
                         This field represents relationship between the artist and the album.
                         Example values: "compilation"
                         Allowed values: "album", "single", "compilation", "appears_on".
-    :param album_type: The type of the album.
-    :param artists: The artists of the album (simplified).
+    :ivar album_type: The type of the album.
+    :ivar artists: The artists of the album (simplified).
                     Each artist object includes a link in href to more detailed information about the artist.
-    :param available_markets: The markets in which the album is available.
-    :param external_urls: Known external URLs for this album.
-    :param href: A link to the Web API endpoint providing full details of the album.
-    :param id: Spotify id of the Album.
-    :param images: The cover art for the album in various sizes, widest first.
-    :param name: The name of the album.
-    :param release_date: The date the album was first released.
-    :param release_date_precision: The precision with which release_date value is known.
-    :param total_tracks: The number of tracks in the album.
-    :param type: The object type. Allowed values: "album".
-    :param uri: The Spotify URI for the album.
-    :param external_ids: Known external IDs for the album or None.
-    :param copyrights: The copyright statements of the album.
-    :param genres: A list of genres the album is associated with. If not yet classified, the list is empty.
-    :param label: The label associated with the album.
-    :param popularity: The popularity of the album. The values will be between 0 and 100.
-    :param tracks: The tracks of the album. None for simplified version of the Album.
-    :param is_playable: True, False or None.
+    :ivar available_markets: The markets in which the album is available.
+    :ivar external_urls: Known external URLs for this album.
+    :ivar href: A link to the Web API endpoint providing full details of the album.
+    :ivar id: Spotify id of the Album.
+    :ivar images: The cover art for the album in various sizes, widest first.
+    :ivar name: The name of the album.
+    :ivar release_date: The date the album was first released.
+    :ivar release_date_precision: The precision with which release_date value is known.
+    :ivar total_tracks: The number of tracks in the album.
+    :ivar type: The object type. Allowed values: "album".
+    :ivar uri: The Spotify URI for the album.
+    :ivar external_ids: Known external IDs for the album or None.
+    :ivar copyrights: The copyright statements of the album.
+    :ivar genres: A list of genres the album is associated with. If not yet classified, the list is empty.
+    :ivar label: The label associated with the album.
+    :ivar popularity: The popularity of the album. The values will be between 0 and 100.
+    :ivar tracks: The tracks of the album. None for simplified version of the Album.
+    :ivar is_playable: True, False or None.
     """
 
     def __init__(

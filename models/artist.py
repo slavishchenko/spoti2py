@@ -8,16 +8,16 @@ class Artist:
     Followers, genres, images and popularity will be None for *simplified version* of the Artist object.
     * You'll get a Simplified Artist object when accessing 'artists' attribute in the Album class, for example.
 
-    :param external_urls: Known external URLs for this artist.
-    :param href: A link to Web API endpoint providing full details of the artist.
-    :param id: The Spotify ID for the artist.
-    :param name: The name of the artist.
-    :param type: The object type. Allowed value: "artist".
-    :param uri: The Spotify URI for the artist.
-    :param followers: Information about the followers of the artist.
-    :param genres: A list of the genres the artist is associated with or an empty list.
-    :param images: Images of the artist in various sizes, widest first.
-    :param popularity: The popularity of the artist. Values is between 0 and 100.
+    :ivar external_urls: Known external URLs for this artist.
+    :ivar href: A link to Web API endpoint providing full details of the artist.
+    :ivar id: The Spotify ID for the artist.
+    :ivar name: The name of the artist.
+    :ivar type: The object type. Allowed value: "artist".
+    :ivar uri: The Spotify URI for the artist.
+    :ivar followers: Information about the followers of the artist.
+    :ivar genres: A list of the genres the artist is associated with or an empty list.
+    :ivar images: Images of the artist in various sizes, widest first.
+    :ivar popularity: The popularity of the artist. Values is between 0 and 100.
     """
 
     def __init__(

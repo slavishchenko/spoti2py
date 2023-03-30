@@ -2,13 +2,13 @@ class Search:
     """
     Spotify search response.
 
-    :param href: A link to the Web API endpoint returning the full result of the request.
-    :param items: List of objects
-    :param limit: The maximum number of items in the response (as set in the query or by default).
-    :param next: URL to the next page of items or None.
-    :param offset: The offset of the items returned (as set in the query or by default).
-    :param previous: URL to the previous page of items or None.
-    :param total: The total number of items available to return.
+    :ivar href: A link to the Web API endpoint returning the full result of the request.
+    :ivar items: List of objects
+    :ivar limit: The maximum number of items in the response (as set in the query or by default).
+    :ivar next: URL to the next page of items or None.
+    :ivar offset: The offset of the items returned (as set in the query or by default).
+    :ivar previous: URL to the previous page of items or None.
+    :ivar total: The total number of items available to return.
     """
 
     def __init__(

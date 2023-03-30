@@ -10,24 +10,24 @@ class Track:
     * You'll get a Simplified Track object when accessing 'tracks' attribute in the Album class, for example.
 
 
-    :param artists: The artists who performed the track.
+    :ivar artists: The artists who performed the track.
                     Each artist object includes a link in href to more detailed information about the artist.
-    :param available_markets: A list of the countries in which the track can be played.
-    :param disc_number: The disc number (usually 1 unless the album consists of more than one disc).
-    :param duration_ms: The track length in milliseconds.
-    :param explicit: Whether or not the track has explicit lyrics.
-    :param external_urls: Known external URLs for this track.
-    :param href: A link to the Web API endpoint providing full details of the track.
-    :param id: The Spotify ID of the track.
-    :param is_local: Whether or not the track is from a local file.
-    :param name: The name of the track.
-    :param preview_url: A link to a 30 second preview (MP3 format) of the track. Can be null.
-    :param track_number: The number of the track. If an album has several discs, the track number is the number on the specified disc.
-    :param type: The object type. "track".
-    :param uri: The Spotify URI for the track.
-    :param album: The album on which the track appears.
-    :param external_ids: Known external IDs for the track.
-    :param popularity: Popularity of the track. Value between 0 and 100.
+    :ivar available_markets: A list of the countries in which the track can be played.
+    :ivar disc_number: The disc number (usually 1 unless the album consists of more than one disc).
+    :ivar duration_ms: The track length in milliseconds.
+    :ivar explicit: Whether or not the track has explicit lyrics.
+    :ivar external_urls: Known external URLs for this track.
+    :ivar href: A link to the Web API endpoint providing full details of the track.
+    :ivar id: The Spotify ID of the track.
+    :ivar is_local: Whether or not the track is from a local file.
+    :ivar name: The name of the track.
+    :ivar preview_url: A link to a 30 second preview (MP3 format) of the track. Can be null.
+    :ivar track_number: The number of the track. If an album has several discs, the track number is the number on the specified disc.
+    :ivar type: The object type. "track".
+    :ivar uri: The Spotify URI for the track.
+    :ivar album: The album on which the track appears.
+    :ivar external_ids: Known external IDs for the track.
+    :ivar popularity: Popularity of the track. Value between 0 and 100.
     """
 
     def __init__(

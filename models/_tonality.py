@@ -7,20 +7,20 @@ class Tonality:
     E.g Am. You can access it as 'tonality' attribute of the AudioAnalysis class.
 
 
-    :param key: represented by an integer.
+    :ivar key: represented by an integer.
                 Integers map to pitches using standard Pitch Class notation.
                 E.g. 0 = C, 1 = C♯/D♭, 2 = D, and so on.
                 If no key was detected, the value is -1.
                 >= -1 <= 11
 
-    :param key_confidence: from 0.0 to 1.0, represents the reliability of the key.
+    :ivar key_confidence: from 0.0 to 1.0, represents the reliability of the key.
                            >= 0 <= 1
 
-    :param mode: Indicates the modality (major or minor) of a track,
+    :ivar mode: Indicates the modality (major or minor) of a track,
                  the type of scale from which its melodic content is derived.
                  Major is represented by 1 and minor is 0.
 
-    :param mode_confidence: from 0.0 to 1.0, of the reliability of the mode.
+    :ivar mode_confidence: from 0.0 to 1.0, of the reliability of the mode.
                             >= 0 <= 1
     """
 
