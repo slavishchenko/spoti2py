@@ -13,6 +13,7 @@ from models import (
     Copyright,
     Followers,
     Image,
+    Recommendations,
     Search,
     Track,
 )
@@ -34,8 +35,8 @@ class Client:
     """
     Client used to interact with the Spotify Web Api.
 
-    :param client_id: Your Client ID.
-    :param client_secret: Your Client Secret
+    :ivar client_id: Your Client ID.
+    :ivar client_secret: Your Client Secret
     """
 
     API_URL = "https://api.spotify.com/"
@@ -145,18 +146,18 @@ class Client:
         Parses JSON response
         """
         classes = OPTIONS.get(lookup_key)
-        # Converts search result itmes from json object to corresponding Python class
-        # E.G search_result.items will be a list of Track objects
+
         search_result.items = [classes["main"](**item) for item in search_result.items]
-        # item is an instance of a class; E.G Track/Album
         for item in search_result.items:
-            for k, v in classes["extra"].items():
-                # k is a class attribute name
-                # v is a class instance
-                if isinstance(getattr(item, k), list):
-                    setattr(item, k, [v(**artist) for artist in getattr(item, k)])
+            for attr_name, cls in classes["extra"].items():
+                if isinstance(getattr(item, attr_name), list):
+                    setattr(
+                        item,
+                        attr_name,
+                        [cls(**artist) for artist in getattr(item, attr_name)],
+                    )
                 else:
-                    setattr(item, k, v(**getattr(item, k)))
+                    setattr(item, attr_name, cls(**getattr(item, attr_name)))
         return search_result
 
     def base_search(self, query_params) -> dict:
