@@ -1,0 +1,96 @@
+{
+  "tracks": [
+    {
+      "album": {
+        "album_group": "ALBUM",
+        "album_type": "ALBUM",
+        "artists": [
+          {
+            "external_urls": {
+              "spotify": "https://open.spotify.com/artist/3WPKDlucMsXH6FC1XaclZC"
+            },
+            "href": "https://api.spotify.com/v1/artists/3WPKDlucMsXH6FC1XaclZC",
+            "id": "3WPKDlucMsXH6FC1XaclZC",
+            "name": "Suicidal Tendencies",
+            "type": "artist",
+            "uri": "spotify:artist:3WPKDlucMsXH6FC1XaclZC"
+          }
+        ],
+        "available_markets": [
+          "AD"
+        ],
+        "external_urls": {
+          "spotify": "https://open.spotify.com/album/0YuCx3bdCJG3n2kuQOhiWL"
+        },
+        "href": "https://api.spotify.com/v1/albums/0YuCx3bdCJG3n2kuQOhiWL",
+        "id": "0YuCx3bdCJG3n2kuQOhiWL",
+        "images": [
+          {
+            "height": 640,
+            "url": "https://i.scdn.co/image/ab67616d0000b2739cd5a44ba1982f4739b4f1c9",
+            "width": 640
+          },
+          {
+            "height": 300,
+            "url": "https://i.scdn.co/image/ab67616d00001e029cd5a44ba1982f4739b4f1c9",
+            "width": 300
+          },
+          {
+            "height": 64,
+            "url": "https://i.scdn.co/image/ab67616d000048519cd5a44ba1982f4739b4f1c9",
+            "width": 64
+          }
+        ],
+        "name": "The Art Of Rebellion",
+        "release_date": "1992-06-25",
+        "release_date_precision": "day",
+        "total_tracks": 12,
+        "type": "album",
+        "uri": "spotify:album:0YuCx3bdCJG3n2kuQOhiWL"
+      },
+      "artists": [
+        {
+          "external_urls": {
+            "spotify": "https://open.spotify.com/artist/3WPKDlucMsXH6FC1XaclZC"
+          },
+          "href": "https://api.spotify.com/v1/artists/3WPKDlucMsXH6FC1XaclZC",
+          "id": "3WPKDlucMsXH6FC1XaclZC",
+          "name": "Suicidal Tendencies",
+          "type": "artist",
+          "uri": "spotify:artist:3WPKDlucMsXH6FC1XaclZC"
+        }
+      ],
+      "available_markets": [
+        "AR"
+      ],
+      "disc_number": 1,
+      "duration_ms": 221933,
+      "explicit": false,
+      "external_ids": {
+        "isrc": "USSM10022335"
+      },
+      "external_urls": {
+        "spotify": "https://open.spotify.com/track/3QnAdpr43iHALD320Od51A"
+      },
+      "href": "https://api.spotify.com/v1/tracks/3QnAdpr43iHALD320Od51A",
+      "id": "3QnAdpr43iHALD320Od51A",
+      "is_local": false,
+      "name": "Tap Into The Power",
+      "popularity": 41,
+      "preview_url": "https://p.scdn.co/mp3-preview/ca775f44dde01c5614dca2b1b162ee5b9fdc490d?cid=490d297a658d4add8fb632bc1818b01d",
+      "track_number": 4,
+      "type": "track",
+      "uri": "spotify:track:3QnAdpr43iHALD320Od51A"
+    }
+  ],
+  "seeds": [
+    {
+      "initialPoolSize": 500,
+      "afterFilteringSize": 500,
+      "afterRelinkingSize": 500,
+      "id": "2ye2Wgw4gimLv2eAKyk1NB",
+      "type": "ARTIST",
+      "href": "https://api.spotify.com/v1/artists/2ye2Wgw4gimLv2eAKyk1NB"
+    }
+  ]
+}

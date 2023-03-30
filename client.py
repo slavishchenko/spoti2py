@@ -5,7 +5,7 @@ from urllib.parse import parse_qsl, urlencode
 
 import requests
 
-from exceptions import NoSearchQuery
+from exceptions import InvalidCredentials, NoSearchQuery
 from models import (
     Album,
     Artist,
@@ -22,6 +22,7 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt="%H:%M:%S",
 )
+
 OPTIONS = {
     "tracks": {"main": Track, "extra": {"artists": Artist, "album": Album}},
     "albums": {"main": Album, "extra": {"artists": Artist, "images": Image}},
@@ -49,7 +50,10 @@ class Client:
 
     def __init__(self, client_id: str, client_secret: str, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-
+        if not isinstance(client_id, str) and isinstance(client_secret, str):
+            raise InvalidCredentials(
+                "client_id and client_secret need to be of type 'str'."
+            )
         self.client_id = client_id
         self.client_secret = client_secret
 
@@ -105,6 +109,10 @@ class Client:
         headers = {"Authorization": f"Bearer {access_token}"}
         return headers
 
+    @staticmethod
+    def _get(endpoint: str, headers: str):
+        return requests.get(endpoint, headers=headers)
+
     def get_resource(
         self, lookup_id: str, resource_type: str = "albums", version: str = None
     ) -> dict:
@@ -113,7 +121,7 @@ class Client:
 
         :param lookup_id: Spotify ID for the desired resource.
         :param resource_type: Which resource you're trying to get. Default is: albums.
-        :param version: Spotify API version. Defaults to CURRENT_API_VERSION [v1].
+        :param version: Spotify API version. Defaults to CURRENT_API_VERSION.
         :return: Spotify JSON response
         :rtype: JSON
         """
@@ -121,7 +129,7 @@ class Client:
             version = self.CURRENT_API_VERSION
         endpoint = f"{self.API_URL}{version}/{resource_type}/{lookup_id}"
         headers = self.get_resource_headers()
-        r = requests.get(endpoint, headers=headers)
+        r = self._get(endpoint, headers=headers)
         if r.status_code not in range(200, 299):
             return {}
         return r.json()
@@ -155,7 +163,7 @@ class Client:
         headers = self.get_resource_headers()
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
         lookup_url = f"{endpoint}?{query_params}"
-        r = requests.get(lookup_url, headers=headers)
+        r = self._get(endpoint=lookup_url, headers=headers)
         if r.status_code not in range(200, 299):
             return {}
         search_type = self._get_json_lookup_key(query_params)
@@ -257,3 +265,57 @@ class Client:
         return AudioAnalysis(
             **self.get_resource(id, resource_type="audio-analysis")["track"]
         )
+
+    def get_recommendations(
+        self,
+        limit: int = 20,
+        seed_artists: list[str] = None,
+        seed_genres: list[str] = None,
+        seed_tracks: list[str] = None,
+    ):
+        """
+        Recommendations are generated based on the available information or a given seed entity and matched against similar artists and tracks.
+        For artists and tracks that are very new or obscure there might not be enough data to generate a list of tracks.
+
+        :param limit: The target size of the list of recommended tracks.
+                      Default: 20. Minimum: 1. Maximum: 100.
+        :param seed_artists: A list of Spotify IDs for seed artists.
+        :param seed_genres: A list of any genres in the set of available genre seeds.
+                            available_genre_seeds is an attribute of the Client class.
+        :param seed_tracks: A list of Spotify IDs fpr a seed track.
+        NOTE:
+            Up to 5 seed values may be provided in any combination of seed_artists, seed_tracks and seed_genres.
+            At least 1 is required!
+
+        :return: JSON object
+        :rtype: JSON
+        """
+        if not seed_artists or seed_genres or seed_tracks:
+            raise Exception("You need to provide at least 1 seed value.")
+
+        query_params = {"limit": limit}
+        if seed_artists:
+            query_params["seed_artists"] = ",".join(seed_artists)
+        if seed_genres:
+            query_params["seed_genres"] = ",".join(seed_genres)
+        if seed_tracks:
+            query_params["seed_tracks"] = ",".join(seed_tracks)
+        endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/?{urlencode(query_params)}"
+        headers = self.get_resource_headers()
+
+        r = self._get(endpoint, headers=headers)
+        if r.status_code not in range(200, 299):
+            return r.text
+        return r.json()
+
+    @property
+    def available_genre_seeds(self):
+        """
+        A list of available genres seed parameter values for recommendations.
+
+        :return: List of genres.
+        :rtype: list[str]
+        """
+        endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/available-genre-seeds"
+        headers = self.get_resource_headers()
+        return self._get(endpoint=endpoint, headers=headers).json()["genres"]
