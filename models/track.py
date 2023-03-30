@@ -1,23 +1,54 @@
+from .album import Album
+from .artist import Artist
+
+
 class Track:
+    """
+    Track model.
+
+    Album, external_ids, and popularity will be None for *simplified version* of the Track object.
+    * You'll get a Simplified Track object when accessing 'tracks' attribute in the Album class, for example.
+
+
+    :param artists: The artists who performed the track.
+                    Each artist object includes a link in href to more detailed information about the artist.
+    :param available_markets: A list of the countries in which the track can be played.
+    :param disc_number: The disc number (usually 1 unless the album consists of more than one disc).
+    :param duration_ms: The track length in milliseconds.
+    :param explicit: Whether or not the track has explicit lyrics.
+    :param external_urls: Known external URLs for this track.
+    :param href: A link to the Web API endpoint providing full details of the track.
+    :param id: The Spotify ID of the track.
+    :param is_local: Whether or not the track is from a local file.
+    :param name: The name of the track.
+    :param preview_url: A link to a 30 second preview (MP3 format) of the track. Can be null.
+    :param track_number: The number of the track. If an album has several discs, the track number is the number on the specified disc.
+    :param type: The object type. "track".
+    :param uri: The Spotify URI for the track.
+    :param album: The album on which the track appears.
+    :param external_ids: Known external IDs for the track.
+    :param popularity: Popularity of the track. Value between 0 and 100.
+    """
+
     def __init__(
         self,
-        artists,
-        available_markets,
-        disc_number,
-        duration_ms,
-        explicit,
-        external_urls,
-        href,
-        id,
-        is_local,
-        name,
-        preview_url,
-        track_number,
-        type,
-        uri,
-        album=None,
-        external_ids=None,
-        popularity=None,
+        artists: list[Artist],
+        available_markets: list[str],
+        disc_number: int,
+        duration_ms: int,
+        explicit: bool,
+        external_urls: dict,
+        href: str,
+        id: str,
+        is_local: bool,
+        name: str,
+        preview_url: str,
+        track_number: int,
+        type: str,
+        uri: str,
+        album=None | list[Album],
+        external_ids=None | dict,
+        popularity=None | float,
     ) -> None:
         self.album = album
         self.artists = artists

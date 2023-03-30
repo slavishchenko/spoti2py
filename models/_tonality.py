@@ -1,20 +1,27 @@
 class Tonality:
     """
-    key: represented by an integer.
-    Integers map to pitches using standard Pitch Class notation.
-    E.g. 0 = C, 1 = C♯/D♭, 2 = D, and so on.
-    If no key was detected, the value is -1.
-    >= -1 <= 11
+    Tonality of the song.
 
-    key_confidence: from 0.0 to 1.0, represents the reliability of the key.
-    >= 0 <= 1
+    Spotify's audio_analysis response provides numeric values for the key and the mode of the song.
+    This class maps integers to the keys, assigns mode to the key and returns tonic (chord) of the song.
+    E.g Am. You can access it as 'tonality' attribute of the AudioAnalysis class.
 
-    mode: indicates the modality (major or minor) of a track,
-    the type of scale from which its melodic content is derived.
-    Major is represented by 1 and minor is 0.
 
-    mode_confidence: from 0.0 to 1.0, of the reliability of the mode.
-    >= 0 <= 1
+    :param key: represented by an integer.
+                Integers map to pitches using standard Pitch Class notation.
+                E.g. 0 = C, 1 = C♯/D♭, 2 = D, and so on.
+                If no key was detected, the value is -1.
+                >= -1 <= 11
+
+    :param key_confidence: from 0.0 to 1.0, represents the reliability of the key.
+                           >= 0 <= 1
+
+    :param mode: Indicates the modality (major or minor) of a track,
+                 the type of scale from which its melodic content is derived.
+                 Major is represented by 1 and minor is 0.
+
+    :param mode_confidence: from 0.0 to 1.0, of the reliability of the mode.
+                            >= 0 <= 1
     """
 
     KEYS_MAP = (
@@ -42,6 +49,7 @@ class Tonality:
 
     @staticmethod
     def assign_mode_to_the_key(key: str, mode: int) -> str:
+        """Returns major or minor chord"""
         if not isinstance(key, str):
             raise TypeError("Key has to be a string")
         if not isinstance(mode, int):
