@@ -265,6 +265,30 @@ class Client:
         albums = r.json()["items"]
         return parse_json(item_type="albums", json_response=albums, models=MODELS)
 
+    def get_artists_top_tracks(self, id: str, market: str = None) -> list[Track]:
+        """
+        Get Spotify catalog information about an artist's top tracks by country.
+
+        :param id: The Spotify ID of the artist.
+        :param market: An ISO 3166-1 alpha-2 country code.
+                       If a country code is specified, only content that is available in that market will be returned.
+                       If a valid user access token is specified in the request header,
+                       the country associated with the user account will take priority over this parameter.
+                       Default: eu. (European Union)
+        :return: list(models.Track)
+        :rtype: list[object]
+        """
+        if not market:
+            market = "us"
+        endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/artists/{id}/top-tracks?market={market}"
+        headers = self.get_resource_headers()
+        r = self._get(endpoint=endpoint, headers=headers)
+        if r.status_code not in range(200, 299):
+            return r.text
+        return parse_json(
+            item_type="tracks", json_response=r.json()["tracks"], models=MODELS
+        )
+
     def get_track(self, id: str) -> Track:
         """
         Get Spotify catalog information for a single track identified by its unique Spotify ID.

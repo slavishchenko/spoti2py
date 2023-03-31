@@ -19,7 +19,7 @@ def parse_json(
     classes = models.get(item_type)
     if not classes:
         raise InvalidItemType(
-            "Allowed item_type values: 'tracks', 'albums', 'artists'."
+            "Allowed item_type values are: 'tracks', 'albums', 'artists'."
         )
     if isinstance(json_response, list):
         items = [classes["main"](**obj) for obj in json_response]
