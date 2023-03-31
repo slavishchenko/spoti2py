@@ -124,7 +124,11 @@ class Client:
         return self._session.get(endpoint, headers=headers)
 
     def get_resource(
-        self, lookup_id: str, resource_type: str = "albums", version: str = None
+        self,
+        lookup_id: str,
+        resource_type: str = "albums",
+        version: str = None,
+        query_params: Optional[str] = None,
     ) -> dict:
         """
         Sends a GET request to Spotify API
@@ -137,11 +141,16 @@ class Client:
         """
         if not version:
             version = self.CURRENT_API_VERSION
+
         endpoint = f"{self.API_URL}{version}/{resource_type}/{lookup_id}"
+
+        if query_params:
+            endpoint = f"{endpoint}/{query_params}"
+
         headers = self.get_resource_headers()
-        r = self._get(endpoint, headers=headers)
+        r = self._get(endpoint=endpoint, headers=headers)
         if r.status_code not in range(200, 299):
-            return {}
+            return r.text
         return r.json()
 
     @staticmethod
@@ -221,6 +230,36 @@ class Client:
         album.tracks = [Track(**song) for song in album.tracks["items"]]
         return album
 
+    def get_album_tracks(
+        self, id: str, market: str = None, limit: int = 20
+    ) -> list[Track]:
+        """
+        Get Spotify catalog information about an album's tracks.
+        Optional parameters can be used to limit the number of tracks returned.
+
+        :param id: The Spotify ID of the album.
+        :param market: An ISO 3166-1 alpha-2 country code.
+                       If a country code is specified, only content that is available in that market will be returned.
+                       If a valid user access token is specified in the request header,
+                       the country associated with the user account will take priority over this parameter.
+                       Default: us.
+        :param limit: The maximum number of items to return. Default: 20. Min: 1. Max: 50.
+        :return: list[models.Track]
+        :rtype: list
+        """
+        query_params = {"id": id, "limit": limit}
+        if not market:
+            query_params["market"] = "us"
+        query_params["market"] = market
+
+        endpoint = f"tracks"
+        album_tracks = self.get_resource(
+            lookup_id=id, resource_type="albums", query_params=endpoint
+        )
+        return parse_json(
+            item_type="tracks", json_response=album_tracks["items"], models=MODELS
+        )
+
     def get_artist(self, id: str) -> Artist:
         """
         Get Spotify catalog information for a single artist identified by their unique Spotify ID.
@@ -256,14 +295,17 @@ class Client:
                 raise TypeError("include_groups should be a list of strings.")
             query_params["include_groups"] = ",".join(include_groups)
 
-        endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/artists/{id}/albums?{urlencode(query_params)}"
-        headers = self.get_resource_headers()
+        endpoint = f"albums?{urlencode(query_params)}"
 
-        r = self._get(endpoint=endpoint, headers=headers)
-        if r.status_code not in range(200, 299):
-            return r.text
-        albums = r.json()["items"]
-        return parse_json(item_type="albums", json_response=albums, models=MODELS)
+        artists_albums = self.get_resource(
+            lookup_id=id, resource_type="artists", query_params=endpoint
+        )["items"]
+
+        return parse_json(
+            item_type="albums",
+            json_response=artists_albums,
+            models=MODELS,
+        )
 
     def get_artists_top_tracks(self, id: str, market: str = None) -> list[Track]:
         """
@@ -280,13 +322,16 @@ class Client:
         """
         if not market:
             market = "us"
-        endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/artists/{id}/top-tracks?market={market}"
-        headers = self.get_resource_headers()
-        r = self._get(endpoint=endpoint, headers=headers)
-        if r.status_code not in range(200, 299):
-            return r.text
+        endpoint = f"top-tracks?market={market}"
+
+        top_tracks = self.get_resource(
+            lookup_id=id, resource_type="artists", query_params=endpoint
+        )["tracks"]
+
         return parse_json(
-            item_type="tracks", json_response=r.json()["tracks"], models=MODELS
+            item_type="tracks",
+            json_response=top_tracks,
+            models=MODELS,
         )
 
     def get_related_artists(self, id: str) -> list[Artist]:
@@ -297,16 +342,12 @@ class Client:
         :return: list[models.Artist]
         :type: list
         """
-        endpoint = (
-            f"{self.API_URL}{self.CURRENT_API_VERSION}/artists/{id}/related-artists"
+        endpoint = f"related-artists"
+        related_artists = self.get_resource(
+            lookup_id=id, resource_type="artists", query_params=endpoint
         )
-        headers = self.get_resource_headers()
-
-        r = self._get(endpoint=endpoint, headers=headers)
-        if r.status_code not in range(200, 299):
-            return r.text
         return parse_json(
-            item_type="artists", json_response=r.json()["artists"], models=MODELS
+            item_type="artists", json_response=related_artists["artists"], models=MODELS
         )
 
     def get_track(self, id: str) -> Track:
