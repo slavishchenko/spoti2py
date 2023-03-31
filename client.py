@@ -260,6 +260,29 @@ class Client:
             item_type="tracks", json_response=album_tracks["items"], models=MODELS
         )
 
+    def get_new_releases(self, country: str = None, limit: int = 20):
+        """
+        Get a list of new album releases featured in Spotify
+
+        :param country: A country: an ISO 3166-1 alpha-2 country code.
+                        Provide this parameter if you want the list of returned items to be relevant to a particular country.
+                        If omitted, the returned items will be relevant to all countries.
+        :param limit: The maximum number of items to return. Default: 20. Min: 1. Max: 50.
+        """
+        query_params = {"limit": limit}
+        endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/browse/new-releases?{urlencode(query_params)}"
+        if country:
+            query_params["country"] = country
+            endpoint = f"{endpoint}{urlencode(query_params)}"
+
+        headers = self.get_resource_headers()
+        r = self._get(endpoint=endpoint, headers=headers)
+
+        if not r.status_code in range(200, 299):
+            return r.text
+        new_releases = r.json()["albums"]["items"]
+        return parse_json(item_type="albums", json_response=new_releases, models=MODELS)
+
     def get_artist(self, id: str) -> Artist:
         """
         Get Spotify catalog information for a single artist identified by their unique Spotify ID.
