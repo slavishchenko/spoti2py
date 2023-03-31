@@ -65,6 +65,7 @@ class Client:
             )
         self.client_id = client_id
         self.client_secret = client_secret
+        self._session = requests.Session()
 
     def get_client_credentials(self) -> str:
         """
@@ -88,7 +89,7 @@ class Client:
         token_url = self.token_url
         token_data = self.get_token_data()
         token_headers = self.get_token_headers()
-        r = requests.post(token_url, data=token_data, headers=token_headers)
+        r = self._session.post(token_url, data=token_data, headers=token_headers)
         if r.status_code not in range(200, 299):
             raise Exception("Authentication failed!")
         data = r.json()
@@ -118,9 +119,8 @@ class Client:
         headers = {"Authorization": f"Bearer {access_token}"}
         return headers
 
-    @staticmethod
-    def _get(endpoint: str, headers: str):
-        return requests.get(endpoint, headers=headers)
+    def _get(self, endpoint: str, headers: str):
+        return self._session.get(endpoint, headers=headers)
 
     def get_resource(
         self, lookup_id: str, resource_type: str = "albums", version: str = None
