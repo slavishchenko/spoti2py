@@ -170,8 +170,6 @@ class Client:
     def search(
         self,
         query: str,
-        operator: str = None,
-        operator_query: str = None,
         search_type: str | list = None,
         limit: int = 1,
     ) -> Search:
@@ -196,13 +194,6 @@ class Client:
         if isinstance(search_type, str):
             search_type = search_type.lower()
 
-        if isinstance(query, dict):
-            query = " ".join([f"{k}:{v}" for k, v in query.items()])
-        if operator != None and operator_query != None:
-            if operator.lower() == "or" or operator.lower() == "not":
-                operator = operator.upper()
-                if isinstance(operator_query, str):
-                    query = f"{query} {operator} {operator_query}"
         query_params = urlencode({"q": query, "type": search_type, "limit": limit})
 
         return self.base_search(query_params)
