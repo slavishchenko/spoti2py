@@ -1,6 +1,6 @@
 import base64
 import datetime
-import logging
+from typing import Optional
 from urllib.parse import parse_qsl, urlencode
 
 import requests
@@ -17,16 +17,18 @@ from models import (
     Search,
     Track,
 )
+from utils import parse_json
 
-logging.basicConfig(
-    filename="logs.log",
-    level=logging.INFO,
-    datefmt="%H:%M:%S",
-)
-
-OPTIONS = {
+MODELS = {
     "tracks": {"main": Track, "extra": {"artists": Artist, "album": Album}},
-    "albums": {"main": Album, "extra": {"artists": Artist, "images": Image}},
+    "albums": {
+        "main": Album,
+        "extra": {
+            "artists": Artist,
+            "images": Image,
+            "copyrights": Copyright,
+        },
+    },
     "artists": {"main": Artist, "extra": {"images": Image, "followers": Followers}},
 }
 
@@ -57,6 +59,7 @@ class Client:
             )
         self.client_id = client_id
         self.client_secret = client_secret
+        self._session = requests.Session()
 
     def get_client_credentials(self) -> str:
         """
@@ -80,7 +83,7 @@ class Client:
         token_url = self.token_url
         token_data = self.get_token_data()
         token_headers = self.get_token_headers()
-        r = requests.post(token_url, data=token_data, headers=token_headers)
+        r = self._session.post(token_url, data=token_data, headers=token_headers)
         if r.status_code not in range(200, 299):
             raise Exception("Authentication failed!")
         data = r.json()
@@ -110,12 +113,15 @@ class Client:
         headers = {"Authorization": f"Bearer {access_token}"}
         return headers
 
-    @staticmethod
-    def _get(endpoint: str, headers: str):
-        return requests.get(endpoint, headers=headers)
+    def _get(self, endpoint: str, headers: str):
+        return self._session.get(endpoint, headers=headers)
 
     def get_resource(
-        self, lookup_id: str, resource_type: str = "albums", version: str = None
+        self,
+        lookup_id: str,
+        resource_type: str = "albums",
+        version: str = None,
+        query_params: Optional[str] = None,
     ) -> dict:
         """
         Sends a GET request to Spotify API
@@ -128,11 +134,16 @@ class Client:
         """
         if not version:
             version = self.CURRENT_API_VERSION
+
         endpoint = f"{self.API_URL}{version}/{resource_type}/{lookup_id}"
+
+        if query_params:
+            endpoint = f"{endpoint}/{query_params}"
+
         headers = self.get_resource_headers()
-        r = self._get(endpoint, headers=headers)
+        r = self._get(endpoint=endpoint, headers=headers)
         if r.status_code not in range(200, 299):
-            return {}
+            return r.text
         return r.json()
 
     @staticmethod
@@ -140,38 +151,21 @@ class Client:
         """Returns the key that will be used to parse json"""
         return f"{parse_qsl(query_params)[1][1]}s"
 
-    @staticmethod
-    def _parse_search_items(lookup_key: str, search_result: dict = None) -> object:
-        """
-        Parses JSON response
-        """
-        classes = OPTIONS.get(lookup_key)
-
-        search_result.items = [classes["main"](**item) for item in search_result.items]
-        for item in search_result.items:
-            for attr_name, cls in classes["extra"].items():
-                if isinstance(getattr(item, attr_name), list):
-                    setattr(
-                        item,
-                        attr_name,
-                        [cls(**artist) for artist in getattr(item, attr_name)],
-                    )
-                else:
-                    setattr(item, attr_name, cls(**getattr(item, attr_name)))
-        return search_result
-
     def base_search(self, query_params) -> dict:
         headers = self.get_resource_headers()
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
         lookup_url = f"{endpoint}?{query_params}"
+
         r = self._get(endpoint=lookup_url, headers=headers)
+
         if r.status_code not in range(200, 299):
             return {}
         search_type = self._get_json_lookup_key(query_params)
         search_result = Search(**r.json()[search_type])
-        return self._parse_search_items(
-            lookup_key=search_type, search_result=search_result
+        search_result.items = parse_json(
+            item_type=search_type, json_response=search_result.items, models=MODELS
         )
+        return search_result
 
     def search(
         self,
@@ -221,12 +215,66 @@ class Client:
         :return: :class:`models.Album`
         :rtype: object
         """
-        album = Album(**self.get_resource(id, resource_type="albums"))
-        album.artists = Artist(**album.artists[0])
-        album.copyrights = [Copyright(**copy) for copy in album.copyrights]
-        album.images = [Image(**img) for img in album.images]
+        album = parse_json(
+            item_type="albums",
+            json_response=self.get_resource(id, resource_type="albums"),
+            models=MODELS,
+        )
         album.tracks = [Track(**song) for song in album.tracks["items"]]
         return album
+
+    def get_album_tracks(
+        self, id: str, market: str = None, limit: int = 20
+    ) -> list[Track]:
+        """
+        Get Spotify catalog information about an album's tracks.
+        Optional parameters can be used to limit the number of tracks returned.
+
+        :param id: The Spotify ID of the album.
+        :param market: An ISO 3166-1 alpha-2 country code.
+                       If a country code is specified, only content that is available in that market will be returned.
+                       If a valid user access token is specified in the request header,
+                       the country associated with the user account will take priority over this parameter.
+                       Default: us.
+        :param limit: The maximum number of items to return. Default: 20. Min: 1. Max: 50.
+        :return: list[models.Track]
+        :rtype: list
+        """
+        query_params = {"id": id, "limit": limit}
+        if not market:
+            query_params["market"] = "us"
+        query_params["market"] = market
+
+        endpoint = f"tracks"
+        album_tracks = self.get_resource(
+            lookup_id=id, resource_type="albums", query_params=endpoint
+        )
+        return parse_json(
+            item_type="tracks", json_response=album_tracks["items"], models=MODELS
+        )
+
+    def get_new_releases(self, country: str = None, limit: int = 20):
+        """
+        Get a list of new album releases featured in Spotify
+
+        :param country: A country: an ISO 3166-1 alpha-2 country code.
+                        Provide this parameter if you want the list of returned items to be relevant to a particular country.
+                        If omitted, the returned items will be relevant to all countries.
+        :param limit: The maximum number of items to return. Default: 20. Min: 1. Max: 50.
+        """
+        query_params = {"limit": limit}
+        endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/browse/new-releases?{urlencode(query_params)}"
+        if country:
+            query_params["country"] = country
+            endpoint = f"{endpoint}{urlencode(query_params)}"
+
+        headers = self.get_resource_headers()
+        r = self._get(endpoint=endpoint, headers=headers)
+
+        if not r.status_code in range(200, 299):
+            return r.text
+        new_releases = r.json()["albums"]["items"]
+        return parse_json(item_type="albums", json_response=new_releases, models=MODELS)
 
     def get_artist(self, id: str) -> Artist:
         """
@@ -236,10 +284,87 @@ class Client:
         :return: :class:`models.Artist`
         :rtype: object
         """
-        artist = Artist(**self.get_resource(id, resource_type="artists"))
-        artist.images = [Image(**img) for img in artist.images]
-        artist.followers = Followers(**artist.followers)
-        return artist
+        return parse_json(
+            item_type="artists",
+            json_response=self.get_resource(id, resource_type="artists"),
+            models=MODELS,
+        )
+
+    def get_artists_albums(
+        self, id: str, include_groups: Optional[list[str]] = None, limit: int = 20
+    ) -> list[Album]:
+        """
+        Get Spotify catalog information about an artist's albums.
+
+        :param id: The Spotify ID of the artist.
+        :param include_groups: A list of keywords that will be used to filter the response.
+                               If not supplied, all album types will be returned.
+                               Valid values: album, single, appears_on, compilation.
+        :param limit: The maximum number of items to return. Default: 20. Min: 1. Max. 50.
+        :return: List(:class:`models.Artist`)
+        :rtype: List(:class:`models.Artist`)
+        """
+        query_params = {"id": id, "limit": limit}
+
+        if include_groups:
+            if not isinstance(include_groups, list):
+                raise TypeError("include_groups should be a list of strings.")
+            query_params["include_groups"] = ",".join(include_groups)
+
+        endpoint = f"albums?{urlencode(query_params)}"
+
+        artists_albums = self.get_resource(
+            lookup_id=id, resource_type="artists", query_params=endpoint
+        )["items"]
+
+        return parse_json(
+            item_type="albums",
+            json_response=artists_albums,
+            models=MODELS,
+        )
+
+    def get_artists_top_tracks(self, id: str, market: str = None) -> list[Track]:
+        """
+        Get Spotify catalog information about an artist's top tracks by country.
+
+        :param id: The Spotify ID of the artist.
+        :param market: An ISO 3166-1 alpha-2 country code.
+                       If a country code is specified, only content that is available in that market will be returned.
+                       If a valid user access token is specified in the request header,
+                       the country associated with the user account will take priority over this parameter.
+                       Default: eu. (European Union)
+        :return: list(models.Track)
+        :rtype: list[object]
+        """
+        if not market:
+            market = "us"
+        endpoint = f"top-tracks?market={market}"
+
+        top_tracks = self.get_resource(
+            lookup_id=id, resource_type="artists", query_params=endpoint
+        )["tracks"]
+
+        return parse_json(
+            item_type="tracks",
+            json_response=top_tracks,
+            models=MODELS,
+        )
+
+    def get_related_artists(self, id: str) -> list[Artist]:
+        """
+        Get Spotify catalog information about artists similar to a given artist.
+
+        :param id: The Spotify ID of the artist.
+        :return: list[models.Artist]
+        :type: list
+        """
+        endpoint = f"related-artists"
+        related_artists = self.get_resource(
+            lookup_id=id, resource_type="artists", query_params=endpoint
+        )
+        return parse_json(
+            item_type="artists", json_response=related_artists["artists"], models=MODELS
+        )
 
     def get_track(self, id: str) -> Track:
         """
@@ -249,10 +374,11 @@ class Client:
         :return: :class:`models.Track`
         :rtype: object
         """
-        track = Track(**self.get_resource(id, resource_type="tracks"))
-        track.album = Album(**track.album)
-        track.artists = Artist(**track.artists[0])
-        return track
+        return parse_json(
+            item_type="tracks",
+            json_response=self.get_resource(id, resource_type="tracks"),
+            models=MODELS,
+        )
 
     def get_audio_analysis(self, id: str) -> AudioAnalysis:
         """
@@ -273,7 +399,7 @@ class Client:
         seed_artists: list[str] = None,
         seed_genres: list[str] = None,
         seed_tracks: list[str] = None,
-    ):
+    ) -> Recommendations:
         """
         Recommendations are generated based on the available information or a given seed entity and matched against similar artists and tracks.
         For artists and tracks that are very new or obscure there might not be enough data to generate a list of tracks.
@@ -291,6 +417,7 @@ class Client:
         :return: JSON object
         :rtype: JSON
         """
+
         if not seed_artists or seed_genres or seed_tracks:
             raise Exception("You need to provide at least 1 seed value.")
 
@@ -307,7 +434,12 @@ class Client:
         r = self._get(endpoint, headers=headers)
         if r.status_code not in range(200, 299):
             return r.text
-        return r.json()
+
+        recommendations = Recommendations(**r.json())
+        recommendations.tracks = parse_json(
+            item_type="tracks", json_response=recommendations.tracks, models=MODELS
+        )
+        return recommendations
 
     @property
     def available_genre_seeds(self):

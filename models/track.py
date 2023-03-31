@@ -33,7 +33,6 @@ class Track:
     def __init__(
         self,
         artists: list[Artist],
-        available_markets: list[str],
         disc_number: int,
         duration_ms: int,
         explicit: bool,
@@ -46,6 +45,8 @@ class Track:
         track_number: int,
         type: str,
         uri: str,
+        available_markets: list[str] = None,
+        is_playable: bool = None,
         album=None | list[Album],
         external_ids=None | dict,
         popularity=None | float,
@@ -67,6 +68,7 @@ class Track:
         self.track_number = track_number
         self.type = type
         self.uri = uri
+        self.is_playable = is_playable
 
     def __str__(self):
         return f"{', '.join([artist.name for artist in self.artists])} - {self.name}"

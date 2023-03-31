@@ -1,1 +1,1 @@
-from .exceptions import InvalidCredentials, NoSearchQuery
+from .exceptions import InvalidCredentials, InvalidItemType, NoSearchQuery
