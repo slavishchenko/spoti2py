@@ -1,6 +1,15 @@
 from .image import Image
 
 
+class Followers:
+    def __init__(self, href, total) -> None:
+        self.href = href
+        self.total = total
+
+    def __str__(self) -> str:
+        return f"{self.total}"
+
+
 class Artist:
     """
     The Artist model.
@@ -28,7 +37,7 @@ class Artist:
         name: str,
         type: str,
         uri: str,
-        followers=None | list["Followers"],
+        followers=None | list[Followers],
         genres=None | list,
         images=None | list[Image],
         popularity=None | int,
@@ -49,12 +58,3 @@ class Artist:
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name})"
-
-
-class Followers:
-    def __init__(self, href, total) -> None:
-        self.href = href
-        self.total = total
-
-    def __str__(self) -> str:
-        return f"{self.total}"

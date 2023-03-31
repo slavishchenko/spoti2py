@@ -17,6 +17,7 @@ from models import (
     Search,
     Track,
 )
+from utils import parse_json
 
 logging.basicConfig(
     filename="logs.log",
@@ -24,9 +25,16 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-OPTIONS = {
+MODELS = {
     "tracks": {"main": Track, "extra": {"artists": Artist, "album": Album}},
-    "albums": {"main": Album, "extra": {"artists": Artist, "images": Image}},
+    "albums": {
+        "main": Album,
+        "extra": {
+            "artists": Artist,
+            "images": Image,
+            "copyrights": Copyright,
+        },
+    },
     "artists": {"main": Artist, "extra": {"images": Image, "followers": Followers}},
 }
 
@@ -140,38 +148,21 @@ class Client:
         """Returns the key that will be used to parse json"""
         return f"{parse_qsl(query_params)[1][1]}s"
 
-    @staticmethod
-    def _parse_search_items(lookup_key: str, search_result: dict = None) -> object:
-        """
-        Parses JSON response
-        """
-        classes = OPTIONS.get(lookup_key)
-
-        search_result.items = [classes["main"](**item) for item in search_result.items]
-        for item in search_result.items:
-            for attr_name, cls in classes["extra"].items():
-                if isinstance(getattr(item, attr_name), list):
-                    setattr(
-                        item,
-                        attr_name,
-                        [cls(**artist) for artist in getattr(item, attr_name)],
-                    )
-                else:
-                    setattr(item, attr_name, cls(**getattr(item, attr_name)))
-        return search_result
-
     def base_search(self, query_params) -> dict:
         headers = self.get_resource_headers()
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
         lookup_url = f"{endpoint}?{query_params}"
+
         r = self._get(endpoint=lookup_url, headers=headers)
+
         if r.status_code not in range(200, 299):
             return {}
         search_type = self._get_json_lookup_key(query_params)
         search_result = Search(**r.json()[search_type])
-        return self._parse_search_items(
-            lookup_key=search_type, search_result=search_result
+        search_result.items = parse_json(
+            item_type=search_type, json_response=search_result.items, models=MODELS
         )
+        return search_result
 
     def search(
         self,
@@ -221,10 +212,11 @@ class Client:
         :return: :class:`models.Album`
         :rtype: object
         """
-        album = Album(**self.get_resource(id, resource_type="albums"))
-        album.artists = Artist(**album.artists[0])
-        album.copyrights = [Copyright(**copy) for copy in album.copyrights]
-        album.images = [Image(**img) for img in album.images]
+        album = parse_json(
+            item_type="albums",
+            json_response=self.get_resource(id, resource_type="albums"),
+            models=MODELS,
+        )
         album.tracks = [Track(**song) for song in album.tracks["items"]]
         return album
 
@@ -236,10 +228,11 @@ class Client:
         :return: :class:`models.Artist`
         :rtype: object
         """
-        artist = Artist(**self.get_resource(id, resource_type="artists"))
-        artist.images = [Image(**img) for img in artist.images]
-        artist.followers = Followers(**artist.followers)
-        return artist
+        return parse_json(
+            item_type="artists",
+            json_response=self.get_resource(id, resource_type="artists"),
+            models=MODELS,
+        )
 
     def get_track(self, id: str) -> Track:
         """
@@ -249,10 +242,11 @@ class Client:
         :return: :class:`models.Track`
         :rtype: object
         """
-        track = Track(**self.get_resource(id, resource_type="tracks"))
-        track.album = Album(**track.album)
-        track.artists = Artist(**track.artists[0])
-        return track
+        return parse_json(
+            item_type="tracks",
+            json_response=self.get_resource(id, resource_type="tracks"),
+            models=MODELS,
+        )
 
     def get_audio_analysis(self, id: str) -> AudioAnalysis:
         """
@@ -273,7 +267,7 @@ class Client:
         seed_artists: list[str] = None,
         seed_genres: list[str] = None,
         seed_tracks: list[str] = None,
-    ):
+    ) -> Recommendations:
         """
         Recommendations are generated based on the available information or a given seed entity and matched against similar artists and tracks.
         For artists and tracks that are very new or obscure there might not be enough data to generate a list of tracks.
@@ -291,6 +285,7 @@ class Client:
         :return: JSON object
         :rtype: JSON
         """
+
         if not seed_artists or seed_genres or seed_tracks:
             raise Exception("You need to provide at least 1 seed value.")
 
@@ -307,7 +302,12 @@ class Client:
         r = self._get(endpoint, headers=headers)
         if r.status_code not in range(200, 299):
             return r.text
-        return r.json()
+
+        recommendations = Recommendations(**r.json())
+        recommendations.tracks = parse_json(
+            item_type="tracks", json_response=recommendations.tracks, models=MODELS
+        )
+        return recommendations
 
     @property
     def available_genre_seeds(self):
