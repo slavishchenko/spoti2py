@@ -289,6 +289,26 @@ class Client:
             item_type="tracks", json_response=r.json()["tracks"], models=MODELS
         )
 
+    def get_related_artists(self, id: str) -> list[Artist]:
+        """
+        Get Spotify catalog information about artists similar to a given artist.
+
+        :param id: The Spotify ID of the artist.
+        :return: list[models.Artist]
+        :type: list
+        """
+        endpoint = (
+            f"{self.API_URL}{self.CURRENT_API_VERSION}/artists/{id}/related-artists"
+        )
+        headers = self.get_resource_headers()
+
+        r = self._get(endpoint=endpoint, headers=headers)
+        if r.status_code not in range(200, 299):
+            return r.text
+        return parse_json(
+            item_type="artists", json_response=r.json()["artists"], models=MODELS
+        )
+
     def get_track(self, id: str) -> Track:
         """
         Get Spotify catalog information for a single track identified by its unique Spotify ID.
