@@ -1,6 +1,5 @@
 import base64
 import datetime
-import logging
 from typing import Optional
 from urllib.parse import parse_qsl, urlencode
 
@@ -19,12 +18,6 @@ from models import (
     Track,
 )
 from utils import parse_json
-
-logging.basicConfig(
-    filename="logs.log",
-    level=logging.INFO,
-    datefmt="%H:%M:%S",
-)
 
 MODELS = {
     "tracks": {"main": Track, "extra": {"artists": Artist, "album": Album}},
