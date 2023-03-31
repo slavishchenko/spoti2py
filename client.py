@@ -1,6 +1,7 @@
 import base64
 import datetime
 import logging
+from typing import Optional
 from urllib.parse import parse_qsl, urlencode
 
 import requests
@@ -233,6 +234,36 @@ class Client:
             json_response=self.get_resource(id, resource_type="artists"),
             models=MODELS,
         )
+
+    def get_artists_albums(
+        self, id: str, include_groups: Optional[list[str]] = None, limit: int = 20
+    ) -> list[Album]:
+        """
+        Get Spotify catalog information about an artist's albums.
+
+        :param id: The Spotify ID of the artist.
+        :param include_groups: A list of keywords that will be used to filter the response.
+                               If not supplied, all album types will be returned.
+                               Valid values: album, single, appears_on, compilation.
+        :param limit: The maximum number of items to return. Default: 20. Min: 1. Max. 50.
+        :return: List(:class:`models.Artist`)
+        :rtype: List(:class:`models.Artist`)
+        """
+        query_params = {"id": id, "limit": limit}
+
+        if include_groups:
+            if not isinstance(include_groups, list):
+                raise TypeError("include_groups should be a list of strings.")
+            query_params["include_groups"] = ",".join(include_groups)
+
+        endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/artists/{id}/albums?{urlencode(query_params)}"
+        headers = self.get_resource_headers()
+
+        r = self._get(endpoint=endpoint, headers=headers)
+        if r.status_code not in range(200, 299):
+            return r.text
+        albums = r.json()["items"]
+        return parse_json(item_type="albums", json_response=albums, models=MODELS)
 
     def get_track(self, id: str) -> Track:
         """

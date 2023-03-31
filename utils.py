@@ -1,3 +1,6 @@
+from exceptions.exceptions import InvalidItemType
+
+
 def parse_json(
     item_type: str, json_response: dict, models: dict
 ) -> list[object] | object:
@@ -14,6 +17,10 @@ def parse_json(
     :rtype: Object.
     """
     classes = models.get(item_type)
+    if not classes:
+        raise InvalidItemType(
+            "Allowed item_type values: 'tracks', 'albums', 'artists'."
+        )
     if isinstance(json_response, list):
         items = [classes["main"](**obj) for obj in json_response]
         for item in items:
@@ -38,11 +45,17 @@ def set_additional_classes(classes: dict, item: object) -> object:
         if getattr(item, attr_name, "optional") == "optional":
             pass
         elif isinstance(getattr(item, attr_name), list):
-            setattr(
-                item,
-                attr_name,
-                [cls(**instance) for instance in getattr(item, attr_name)],
-            )
+            try:
+                setattr(
+                    item,
+                    attr_name,
+                    [cls(**instance) for instance in getattr(item, attr_name)],
+                )
+            except TypeError:
+                setattr(item, attr_name, None)
         else:
-            setattr(item, attr_name, cls(**getattr(item, attr_name)))
+            try:
+                setattr(item, attr_name, cls(**getattr(item, attr_name)))
+            except TypeError:
+                setattr(item, attr_name, None)
     return item
