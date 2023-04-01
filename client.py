@@ -53,7 +53,7 @@ class Client:
 
     def __init__(self, client_id: str, client_secret: str, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if not isinstance(client_id, str) and isinstance(client_secret, str):
+        if not isinstance(client_id, str) and not isinstance(client_secret, str):
             raise InvalidCredentials(
                 "client_id and client_secret need to be of type 'str'."
             )
@@ -174,7 +174,7 @@ class Client:
         limit: int = 1,
     ) -> Search:
         """
-        Get Spotify catalog information about albums, artists and tracks \
+        Get Spotify catalog information about albums, artists and tracks
         that match a keyword string.
 
         :param query: required - Your search query.
@@ -323,7 +323,7 @@ class Client:
                        If a country code is specified, only content that is available in that market will be returned.
                        If a valid user access token is specified in the request header,
                        the country associated with the user account will take priority over this parameter.
-                       Default: eu. (European Union)
+                       Default: us.
         :return: list(models.Track)
         :rtype: list[object]
         """
@@ -409,16 +409,25 @@ class Client:
         :rtype: JSON
         """
 
-        if not seed_artists or seed_genres or seed_tracks:
-            raise Exception("You need to provide at least 1 seed value.")
-
         query_params = {"limit": limit}
-        if seed_artists:
-            query_params["seed_artists"] = ",".join(seed_artists)
-        if seed_genres:
-            query_params["seed_genres"] = ",".join(seed_genres)
-        if seed_tracks:
-            query_params["seed_tracks"] = ",".join(seed_tracks)
+
+        args = [
+            ("seed_artists", seed_artists),
+            ("seed_genres", seed_genres),
+            ("seed_tracks", seed_tracks),
+        ]
+        if not any(arg[1] for arg in args):
+            raise Exception("You need to provide at least 1 seed value.")
+        for arg in args:
+            if not arg[1]:
+                pass
+            elif isinstance(arg[1], list):
+                query_params[arg[0]] = ",".join(arg[1])
+            else:
+                raise TypeError(
+                    f"Invalid value for {arg[0]}. Expected a list, but got '{type(arg[1])}' instead."
+                )
+
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/?{urlencode(query_params)}"
         headers = self.get_resource_headers()
 
