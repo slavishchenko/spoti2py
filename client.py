@@ -21,6 +21,8 @@ from models import (
 )
 from utils import parse_json
 
+logger = logging.getLogger(__name__)
+
 MODELS = {
     "tracks": {"main": Track, "extra": {"artists": Artist, "album": Album}},
     "albums": {
@@ -121,7 +123,7 @@ class Client:
     def get_resource(
         self,
         lookup_id: str,
-        resource_type: str = "albums",
+        resource_type: str = "tracks",
         version: str = None,
         query_params: Optional[str] = None,
     ) -> dict:
@@ -129,7 +131,7 @@ class Client:
         Sends a GET request to Spotify API
 
         :param lookup_id: Spotify ID for the desired resource.
-        :param resource_type: Which resource you're trying to get. Default is: albums.
+        :param resource_type: Which resource you're trying to get. Default is: tracks.
         :param version: Spotify API version. Defaults to CURRENT_API_VERSION.
         :return: Spotify JSON response
         :rtype: JSON
@@ -147,12 +149,12 @@ class Client:
         try:
             r = self._get(endpoint=endpoint, headers=headers)
             r.raise_for_status()
-            logging.debug(r.json())
+            logger.debug(r.json())
             return r.json()
         except requests.exceptions.HTTPError as e:
             msg = exception_handler(e)
             
-            logging.error(f'HTTP {r.status_code} Error returned for {endpoint}. Reason: {msg}')
+            logger.error(f'HTTP {r.status_code} Error returned for {endpoint}. Reason: {msg}')
 
             raise SpotifyException(r.status_code, endpoint, msg)
 
@@ -170,8 +172,8 @@ class Client:
             r = self._get(endpoint=lookup_url, headers=headers)
             r.raise_for_status()
 
-            logging.debug(r.json())
-            
+            logger.debug(r.json())
+
             search_type = self._get_json_lookup_key(query_params)
             search_result = Search(**r.json()[search_type])
             search_result.items = parse_json(
@@ -180,7 +182,7 @@ class Client:
             return search_result
         except requests.exceptions.HTTPError as e:
             msg = exception_handler(e)
-            logging.error(f'HTTP {r.status_code} Error returned for {lookup_url}. Reason: {msg}')
+            logger.error(f'HTTP {r.status_code} Error returned for {lookup_url}. Reason: {msg}')
             raise SpotifyException(r.status_code, lookup_url, msg)
 
     def search(

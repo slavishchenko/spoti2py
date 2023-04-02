@@ -22,4 +22,4 @@ class SpotifyException(Exception):
         self.msg = msg
 
     def __str__(self):
-        return f'\nHTTP {self.status_code} Error occured while getting {self.endpoint}.\nReason: {self.msg}.'
+        return f'\nHTTP {self.status_code} Error occured while getting "{self.endpoint}".\nReason: {self.msg}.'
