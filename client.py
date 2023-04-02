@@ -1,11 +1,13 @@
 import base64
 import datetime
+import logging
 from typing import Optional
 from urllib.parse import parse_qsl, urlencode
 
 import requests
 
-from exceptions import InvalidCredentials, NoSearchQuery
+from _handlers import exception_handler
+from exceptions import InvalidCredentials, NoSearchQuery, SpotifyException
 from models import (
     Album,
     Artist,
@@ -131,6 +133,7 @@ class Client:
         :param version: Spotify API version. Defaults to CURRENT_API_VERSION.
         :return: Spotify JSON response
         :rtype: JSON
+        :raises: exceptions.SpotifyException
         """
         if not version:
             version = self.CURRENT_API_VERSION
@@ -141,10 +144,17 @@ class Client:
             endpoint = f"{endpoint}/{query_params}"
 
         headers = self.get_resource_headers()
-        r = self._get(endpoint=endpoint, headers=headers)
-        if r.status_code not in range(200, 299):
-            return r.text
-        return r.json()
+        try:
+            r = self._get(endpoint=endpoint, headers=headers)
+            r.raise_for_status()
+            logging.debug(r.json())
+            return r.json()
+        except requests.exceptions.HTTPError as e:
+            msg = exception_handler(e)
+            
+            logging.error(f'HTTP {r.status_code} Error returned for {endpoint}. Reason: {msg}')
+
+            raise SpotifyException(r.status_code, endpoint, msg)
 
     @staticmethod
     def _get_json_lookup_key(query_params: str):
@@ -156,16 +166,22 @@ class Client:
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
         lookup_url = f"{endpoint}?{query_params}"
 
-        r = self._get(endpoint=lookup_url, headers=headers)
+        try:
+            r = self._get(endpoint=lookup_url, headers=headers)
+            r.raise_for_status()
 
-        if r.status_code not in range(200, 299):
-            return {}
-        search_type = self._get_json_lookup_key(query_params)
-        search_result = Search(**r.json()[search_type])
-        search_result.items = parse_json(
-            item_type=search_type, json_response=search_result.items, models=MODELS
-        )
-        return search_result
+            logging.debug(r.json())
+            
+            search_type = self._get_json_lookup_key(query_params)
+            search_result = Search(**r.json()[search_type])
+            search_result.items = parse_json(
+                item_type=search_type, json_response=search_result.items, models=MODELS
+            )
+            return search_result
+        except requests.exceptions.HTTPError as e:
+            msg = exception_handler(e)
+            logging.error(f'HTTP {r.status_code} Error returned for {lookup_url}. Reason: {msg}')
+            raise SpotifyException(r.status_code, lookup_url, msg)
 
     def search(
         self,
