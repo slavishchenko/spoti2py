@@ -1,9 +1,11 @@
+import asyncio
 import base64
 import datetime
 import logging
 from typing import Optional
 from urllib.parse import parse_qsl, urlencode
 
+import aiohttp
 import requests
 
 from _handlers import exception_handler
@@ -63,7 +65,17 @@ class Client:
             )
         self.client_id = client_id
         self.client_secret = client_secret
-        self._session = requests.Session()
+        self.loop = asyncio.new_event_loop()
+        self._session = aiohttp.ClientSession(loop=self.loop)
+
+    async def close(self) -> None:
+        await self._session.close()
+
+    async def __aenter__(self) -> "Client":
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        await self.close()
 
     def get_client_credentials(self) -> str:
         """
@@ -83,14 +95,14 @@ class Client:
     def get_token_data(self) -> dict:
         return {"grant_type": "client_credentials"}
 
-    def authenticate(self) -> bool:
+    async def authenticate(self) -> bool:
         token_url = self.token_url
         token_data = self.get_token_data()
         token_headers = self.get_token_headers()
-        r = self._session.post(token_url, data=token_data, headers=token_headers)
-        if r.status_code not in range(200, 299):
-            raise Exception("Authentication failed!")
-        data = r.json()
+        async with self._session.post(
+            token_url, data=token_data, headers=token_headers
+        ) as response:
+            data = await response.json()
         now = datetime.datetime.now()
         access_token = data["access_token"]
         expires_in = data["expires_in"]
@@ -100,27 +112,29 @@ class Client:
         self.access_token_expired = expires < now
         return True
 
-    def get_access_token(self) -> str:
+    async def get_access_token(self) -> str:
         token = self.access_token
         expires = self.access_token_expires
         now = datetime.datetime.now()
         if expires < now:
-            self.authenticate()
-            return self.get_access_token()
+            await self.authenticate()
+            return await self.get_access_token()
         elif token == None:
-            self.authenticate()
-            return self.get_access_token()
+            await self.authenticate()
+            return await self.get_access_token()
         return token
 
-    def get_resource_headers(self) -> dict:
-        access_token = self.get_access_token()
+    async def get_resource_headers(self) -> dict:
+        access_token = await self.get_access_token()
         headers = {"Authorization": f"Bearer {access_token}"}
         return headers
 
-    def _get(self, endpoint: str, headers: str):
-        return self._session.get(endpoint, headers=headers)
+    async def _get(self, endpoint: str, headers: str):
+        async with self._session.get(endpoint, headers=headers) as response:
+            data = await response.json()
+        return data
 
-    def get_resource(
+    async def get_resource(
         self,
         lookup_id: str,
         resource_type: str = "tracks",
@@ -145,47 +159,42 @@ class Client:
         if query_params:
             endpoint = f"{endpoint}/{query_params}"
 
-        headers = self.get_resource_headers()
+        headers = await self.get_resource_headers()
         try:
-            r = self._get(endpoint=endpoint, headers=headers)
-            r.raise_for_status()
-            logger.debug(r.json())
-            return r.json()
+            r = await self._get(endpoint=endpoint, headers=headers)
+            return r
         except requests.exceptions.HTTPError as e:
             msg = exception_handler(e)
-            
-            logger.error(f'HTTP {r.status_code} Error returned for {endpoint}. Reason: {msg}')
 
-            raise SpotifyException(r.status_code, endpoint, msg)
+            logger.error(f"HTTP 404 Error returned for {endpoint}. Reason: {msg}")
+
+            raise SpotifyException("404", endpoint, msg)
 
     @staticmethod
     def _get_json_lookup_key(query_params: str):
         """Returns the key that will be used to parse json"""
         return f"{parse_qsl(query_params)[1][1]}s"
 
-    def base_search(self, query_params) -> dict:
-        headers = self.get_resource_headers()
+    async def base_search(self, query_params) -> dict:
+        headers = await self.get_resource_headers()
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
         lookup_url = f"{endpoint}?{query_params}"
 
         try:
-            r = self._get(endpoint=lookup_url, headers=headers)
-            r.raise_for_status()
-
-            logger.debug(r.json())
+            r = await self._get(endpoint=lookup_url, headers=headers)
 
             search_type = self._get_json_lookup_key(query_params)
-            search_result = Search(**r.json()[search_type])
+            search_result = Search(**r[search_type])
             search_result.items = parse_json(
                 item_type=search_type, json_response=search_result.items, models=MODELS
             )
             return search_result
         except requests.exceptions.HTTPError as e:
             msg = exception_handler(e)
-            logger.error(f'HTTP {r.status_code} Error returned for {lookup_url}. Reason: {msg}')
-            raise SpotifyException(r.status_code, lookup_url, msg)
+            logger.error(f"HTTP 404 Error returned for {lookup_url}. Reason: {msg}")
+            raise SpotifyException("404", lookup_url, msg)
 
-    def search(
+    async def search(
         self,
         query: str,
         search_type: str | list = None,
@@ -214,7 +223,7 @@ class Client:
 
         query_params = urlencode({"q": query, "type": search_type, "limit": limit})
 
-        return self.base_search(query_params)
+        return await self.base_search(query_params)
 
     def get_album(self, id: str) -> Album:
         """
@@ -389,7 +398,7 @@ class Client:
             models=MODELS,
         )
 
-    def get_audio_analysis(self, id: str) -> AudioAnalysis:
+    async def get_audio_analysis(self, id: str) -> AudioAnalysis:
         """
         Get low-level audio analysis for a track in the Spotify catalog.
         The audio analysis describes the track’s structure and musical content, including rhythm, pitch, and timbre.
@@ -398,9 +407,9 @@ class Client:
         :return: :class:`models.AudioAnalysis`
         :rtype: object
         """
-        return AudioAnalysis(
-            **self.get_resource(id, resource_type="audio-analysis")["track"]
-        )
+        get_audio_analysis = await self.get_resource(id, resource_type="audio-analysis")
+        audio_analysis = get_audio_analysis["track"]
+        return AudioAnalysis(**audio_analysis)
 
     def get_recommendations(
         self,
