@@ -294,7 +294,7 @@ class Client:
         new_releases = r.json()["albums"]["items"]
         return parse_json(item_type="albums", json_response=new_releases, models=MODELS)
 
-    def get_artist(self, id: str) -> Artist:
+    async def get_artist(self, id: str) -> Artist:
         """
         Get Spotify catalog information for a single artist identified by their unique Spotify ID.
 
@@ -304,11 +304,11 @@ class Client:
         """
         return parse_json(
             item_type="artists",
-            json_response=self.get_resource(id, resource_type="artists"),
+            json_response=await self.get_resource(id, resource_type="artists"),
             models=MODELS,
         )
 
-    def get_artists_albums(
+    async def get_artists_albums(
         self, id: str, include_groups: Optional[list[str]] = None, limit: int = 20
     ) -> list[Album]:
         """
@@ -331,17 +331,16 @@ class Client:
 
         endpoint = f"albums?{urlencode(query_params)}"
 
-        artists_albums = self.get_resource(
+        artists_albums = await self.get_resource(
             lookup_id=id, resource_type="artists", query_params=endpoint
-        )["items"]
-
+        )
         return parse_json(
             item_type="albums",
-            json_response=artists_albums,
+            json_response=artists_albums["items"],
             models=MODELS,
         )
 
-    def get_artists_top_tracks(self, id: str, market: str = None) -> list[Track]:
+    async def get_artists_top_tracks(self, id: str, market: str = None) -> list[Track]:
         """
         Get Spotify catalog information about an artist's top tracks by country.
 
@@ -358,17 +357,17 @@ class Client:
             market = "us"
         endpoint = f"top-tracks?market={market}"
 
-        top_tracks = self.get_resource(
+        top_tracks = await self.get_resource(
             lookup_id=id, resource_type="artists", query_params=endpoint
-        )["tracks"]
+        )
 
         return parse_json(
             item_type="tracks",
-            json_response=top_tracks,
+            json_response=top_tracks["tracks"],
             models=MODELS,
         )
 
-    def get_related_artists(self, id: str) -> list[Artist]:
+    async def get_related_artists(self, id: str) -> list[Artist]:
         """
         Get Spotify catalog information about artists similar to a given artist.
 
@@ -377,14 +376,14 @@ class Client:
         :type: list
         """
         endpoint = f"related-artists"
-        related_artists = self.get_resource(
+        related_artists = await self.get_resource(
             lookup_id=id, resource_type="artists", query_params=endpoint
         )
         return parse_json(
             item_type="artists", json_response=related_artists["artists"], models=MODELS
         )
 
-    def get_track(self, id: str) -> Track:
+    async def get_track(self, id: str) -> Track:
         """
         Get Spotify catalog information for a single track identified by its unique Spotify ID.
 
@@ -394,7 +393,7 @@ class Client:
         """
         return parse_json(
             item_type="tracks",
-            json_response=self.get_resource(id, resource_type="tracks"),
+            json_response=await self.get_resource(id, resource_type="tracks"),
             models=MODELS,
         )
 
