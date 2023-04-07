@@ -6,7 +6,6 @@ from typing import Optional
 from urllib.parse import parse_qsl, urlencode
 
 import aiohttp
-import requests
 
 from exceptions import InvalidCredentials, NoSearchQuery, SpotifyException
 from models import (
