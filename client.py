@@ -39,7 +39,6 @@ MODELS = {
 }
 
 # TODO Exception handling required for get_recommendations and get_new_releases
-# Request headers in _get method!
 
 
 class Client:
@@ -132,7 +131,8 @@ class Client:
         headers = {"Authorization": f"Bearer {access_token}"}
         return headers
 
-    async def _get(self, endpoint: str, headers: str):
+    async def _get(self, endpoint: str):
+        headers = await self.get_resource_headers()
         async with self._session.get(endpoint, headers=headers) as response:
             data = await response.json()
         return data
@@ -162,16 +162,17 @@ class Client:
         if query_params:
             endpoint = f"{endpoint}/{query_params}"
 
-        headers = await self.get_resource_headers()
         try:
-            r = await self._get(endpoint=endpoint, headers=headers)
+            r = await self._get(endpoint=endpoint)
             return r
         except requests.exceptions.HTTPError as e:
             msg = exception_handler(e)
 
-            logger.error(f"HTTP 404 Error returned for {endpoint}. Reason: {msg}")
+            logger.error(
+                f"HTTP {r.status} Error returned for {endpoint}. Reason: {msg}"
+            )
 
-            raise SpotifyException("404", endpoint, msg)
+            raise SpotifyException("{r.status}", endpoint, msg)
 
     @staticmethod
     def _get_json_lookup_key(query_params: str):
@@ -179,12 +180,11 @@ class Client:
         return f"{parse_qsl(query_params)[1][1]}s"
 
     async def base_search(self, query_params) -> dict:
-        headers = await self.get_resource_headers()
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
         lookup_url = f"{endpoint}?{query_params}"
 
         try:
-            r = await self._get(endpoint=lookup_url, headers=headers)
+            r = await self._get(endpoint=lookup_url)
 
             search_type = self._get_json_lookup_key(query_params)
             search_result = Search(**r[search_type])
@@ -194,8 +194,10 @@ class Client:
             return search_result
         except requests.exceptions.HTTPError as e:
             msg = exception_handler(e)
-            logger.error(f"HTTP 404 Error returned for {lookup_url}. Reason: {msg}")
-            raise SpotifyException("404", lookup_url, msg)
+            logger.error(
+                f"HTTP {r.status} Error returned for {lookup_url}. Reason: {msg}"
+            )
+            raise SpotifyException("{r.status}", lookup_url, msg)
 
     async def search(
         self,
@@ -289,8 +291,7 @@ class Client:
             query_params["country"] = country
             endpoint = f"{endpoint}{urlencode(query_params)}"
 
-        headers = await self.get_resource_headers()
-        r = await self._get(endpoint=endpoint, headers=headers)
+        r = await self._get(endpoint=endpoint)
 
         try:
             new_releases = r["albums"]["items"]
@@ -462,9 +463,8 @@ class Client:
                 )
 
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/?{urlencode(query_params)}"
-        headers = await self.get_resource_headers()
 
-        r = await self._get(endpoint, headers=headers)
+        r = await self._get(endpoint)
 
         recommendations = Recommendations(**r)
         recommendations.tracks = parse_json(
@@ -481,8 +481,5 @@ class Client:
         :rtype: list[str]
         """
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/available-genre-seeds"
-        headers = await self.get_resource_headers()
-        available_genre_seeds = await self._get(
-            endpoint=endpoint, headers=headers
-        ).json()["genres"]
+        available_genre_seeds = await self._get(endpoint=endpoint).json()["genres"]
         return available_genre_seeds
