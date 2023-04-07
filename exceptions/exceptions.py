@@ -15,8 +15,9 @@ class InvalidItemType(Exception):
 
     pass
 
+
 class SpotifyException(Exception):
-    def __init__(self, status_code:int, endpoint:str, msg:str | None):
+    def __init__(self, status_code: int, endpoint: str, msg: str | None):
         self.status_code = status_code
         self.endpoint = endpoint
         self.msg = msg

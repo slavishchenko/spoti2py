@@ -38,6 +38,9 @@ MODELS = {
     "artists": {"main": Artist, "extra": {"images": Image, "followers": Followers}},
 }
 
+# TODO Exception handling required for get_recommendations and get_new_releases
+# Request headers in _get method!
+
 
 class Client:
     """
@@ -225,7 +228,7 @@ class Client:
 
         return await self.base_search(query_params)
 
-    def get_album(self, id: str) -> Album:
+    async def get_album(self, id: str) -> Album:
         """
         Get Spotify catalog information for a single album.
 
@@ -235,13 +238,13 @@ class Client:
         """
         album = parse_json(
             item_type="albums",
-            json_response=self.get_resource(id, resource_type="albums"),
+            json_response=await self.get_resource(id, resource_type="albums"),
             models=MODELS,
         )
         album.tracks = [Track(**song) for song in album.tracks["items"]]
         return album
 
-    def get_album_tracks(
+    async def get_album_tracks(
         self, id: str, market: str = None, limit: int = 20
     ) -> list[Track]:
         """
@@ -264,14 +267,14 @@ class Client:
         query_params["market"] = market
 
         endpoint = f"tracks"
-        album_tracks = self.get_resource(
+        album_tracks = await self.get_resource(
             lookup_id=id, resource_type="albums", query_params=endpoint
         )
         return parse_json(
             item_type="tracks", json_response=album_tracks["items"], models=MODELS
         )
 
-    def get_new_releases(self, country: str = None, limit: int = 20):
+    async def get_new_releases(self, country: str = None, limit: int = 20):
         """
         Get a list of new album releases featured in Spotify
 
@@ -286,13 +289,17 @@ class Client:
             query_params["country"] = country
             endpoint = f"{endpoint}{urlencode(query_params)}"
 
-        headers = self.get_resource_headers()
-        r = self._get(endpoint=endpoint, headers=headers)
+        headers = await self.get_resource_headers()
+        r = await self._get(endpoint=endpoint, headers=headers)
 
-        if not r.status_code in range(200, 299):
-            return r.text
-        new_releases = r.json()["albums"]["items"]
-        return parse_json(item_type="albums", json_response=new_releases, models=MODELS)
+        try:
+            new_releases = r["albums"]["items"]
+            return parse_json(
+                item_type="albums", json_response=new_releases, models=MODELS
+            )
+        except KeyError as e:
+            logger.error(f"Can not parse json response. \nAPI Response: {r}")
+            raise KeyError
 
     async def get_artist(self, id: str) -> Artist:
         """
@@ -410,7 +417,7 @@ class Client:
         audio_analysis = get_audio_analysis["track"]
         return AudioAnalysis(**audio_analysis)
 
-    def get_recommendations(
+    async def get_recommendations(
         self,
         limit: int = 20,
         seed_artists: list[str] = None,
@@ -455,20 +462,18 @@ class Client:
                 )
 
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/?{urlencode(query_params)}"
-        headers = self.get_resource_headers()
+        headers = await self.get_resource_headers()
 
-        r = self._get(endpoint, headers=headers)
-        if r.status_code not in range(200, 299):
-            return r.text
+        r = await self._get(endpoint, headers=headers)
 
-        recommendations = Recommendations(**r.json())
+        recommendations = Recommendations(**r)
         recommendations.tracks = parse_json(
             item_type="tracks", json_response=recommendations.tracks, models=MODELS
         )
         return recommendations
 
     @property
-    def available_genre_seeds(self):
+    async def available_genre_seeds(self):
         """
         A list of available genres seed parameter values for recommendations.
 
@@ -476,5 +481,8 @@ class Client:
         :rtype: list[str]
         """
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/available-genre-seeds"
-        headers = self.get_resource_headers()
-        return self._get(endpoint=endpoint, headers=headers).json()["genres"]
+        headers = await self.get_resource_headers()
+        available_genre_seeds = await self._get(
+            endpoint=endpoint, headers=headers
+        ).json()["genres"]
+        return available_genre_seeds
