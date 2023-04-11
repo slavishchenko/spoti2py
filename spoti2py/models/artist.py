@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .image import Image
 
 
@@ -37,10 +39,10 @@ class Artist:
         name: str,
         type: str,
         uri: str,
-        followers=None | list[Followers],
-        genres=None | list,
-        images=None | list[Image],
-        popularity=None | int,
+        followers: Optional[list[Followers]] = None,
+        genres: Optional[list] = None,
+        images: Optional[list[Image]] = None,
+        popularity: Optional[int] = None,
     ) -> None:
         self.external_urls = external_urls
         self.href = href

@@ -2,7 +2,7 @@ import asyncio
 import base64
 import datetime
 import logging
-from typing import Optional
+from typing import Optional, Union
 from urllib.parse import parse_qsl, urlencode
 
 import aiohttp
@@ -198,7 +198,7 @@ class Client:
     async def search(
         self,
         query: str,
-        search_type: str | list = None,
+        search_type: Union[str, list] = None,
         limit: int = 1,
     ) -> Search:
         """

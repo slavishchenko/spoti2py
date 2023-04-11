@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .artist import Artist
 from .image import Image
 
@@ -49,13 +51,13 @@ class Album:
         total_tracks: int,
         type: str,
         uri: str,
-        external_ids=None | dict,
-        copyrights=None | list["Copyright"],
-        genres=None | list[str],
-        label=None | str,
-        popularity=None | int,
+        external_ids: Optional[dict] = None,
+        copyrights: Optional[list["Copyright"]] = None,
+        genres: Optional[list[str]] = None,
+        label: Optional[str] = None,
+        popularity: Optional[int] = None,
         tracks=None,
-        is_playable=None | bool,
+        is_playable: Optional[bool] = None,
     ) -> None:
         self.album_group = album_group
         self.album_type = album_type

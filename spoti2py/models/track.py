@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .album import Album
 from .artist import Artist
 
@@ -47,9 +49,9 @@ class Track:
         uri: str,
         available_markets: list[str] = None,
         is_playable: bool = None,
-        album=None | list[Album],
-        external_ids=None | dict,
-        popularity=None | float,
+        album: Optional[list[Album]] = None,
+        external_ids: Optional[dict] = None,
+        popularity: Optional[float] = None,
     ) -> None:
         self.album = album
         self.artists = artists

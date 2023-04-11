@@ -1,3 +1,6 @@
+from typing import Optional, Union
+
+
 class Search:
     """
     Spotify search response.
@@ -16,9 +19,9 @@ class Search:
         href: str,
         items: list[object],
         limit: int,
-        next: str | None,
+        next: Union[str, None],
         offset: int,
-        previous: str | None,
+        previous: Union[str, None],
         total: int,
     ) -> None:
         self.href = href
