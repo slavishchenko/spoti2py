@@ -65,6 +65,7 @@ Search for a song and get audio analysis
 
    client_id = "your client id"
    client_secret = "your client secret"
+   
    client = Client(client_id, client_secret)
 
    async def main():
