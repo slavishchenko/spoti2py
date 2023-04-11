@@ -50,8 +50,67 @@ First, instantiate ``spoti2py.client.Client`` class with your *client_id* and *c
 
 Now you can start exploring what Spotify Web API has to offer.
 
-Examples
+Examples 
 ========
+
+Search for a song and get audio analysis
+----------------------------------------
+.. code-block:: python
+
+   import asyncio
+   import os
+
+   from spoti2py.client import Client
+
+
+   client_id = "your client id"
+   client_secret = "your client secret"
+   client = Client(client_id, client_secret)
+
+   async def main():
+      async with client as c:
+         search = await c.search(query="master of puppets", limit=5)
+         songs = search.items
+         analysis = await asyncio.gather(
+               *[asyncio.create_task(c.get_audio_analysis(song.id)) for song in songs]
+         )
+         return zip(songs, analysis)
+
+   songs, analysis = client.loop.run_until_complete(main())
+   print(songs, analysis)
+
+Get full artist details
+-----------------------
+.. code-block:: python
+
+   import asyncio
+   import os
+
+   from spoti2py.client import Client
+
+
+   client_id = "your client id"
+   client_secret = "your client secret"
+   artist_id = "1vCWHaC5f2uS3yhpwWbIA6"
+
+   client = Client(client_id, client_secret)
+
+
+   async def get_full_artist_details():
+      async with client as c:
+         artist, albums, top_tracks, related_artists = await asyncio.gather(
+               c.get_artist(id=artist_id),
+               c.get_artists_albums(id=artist_id, limit=5),
+               c.get_artists_top_tracks(id=artist_id),
+               c.get_related_artists(id=artist_id),
+         )
+         return artist, albums, top_tracks, related_artists
+
+
+   artist, albums, top_tracks, related_artists = client.loop.run_until_complete(
+      get_full_artist_details()
+   )
+
 
 API reference
 =============
