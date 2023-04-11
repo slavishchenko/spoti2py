@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, List, Optional
 
 from .image import Image
 
@@ -33,16 +33,16 @@ class Artist:
 
     def __init__(
         self,
-        external_urls: dict,
+        external_urls: Dict,
         href: str,
         id: str,
         name: str,
         type: str,
         uri: str,
-        followers: Optional[list[Followers]] = None,
-        genres: Optional[list] = None,
-        images: Optional[list[Image]] = None,
-        popularity=None,
+        followers: Optional[List[Followers]] = None,
+        genres: Optional[List] = None,
+        images: Optional[List[Image]] = None,
+        popularity: Optional[int] = None,
     ) -> None:
         self.external_urls = external_urls
         self.href = href

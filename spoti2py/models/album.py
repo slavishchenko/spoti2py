@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, List, Optional
 
 from .artist import Artist
 from .image import Image
@@ -39,21 +39,21 @@ class Album:
         self,
         album_group: str,
         album_type: str,
-        artists: list[Artist],
-        available_markets: list[str],
-        external_urls: dict,
+        artists: List[Artist],
+        available_markets: List[str],
+        external_urls: Dict,
         href: str,
         id: str,
-        images: list[Image],
+        images: List[Image],
         name: str,
         release_date: str,
         release_date_precision: str,
         total_tracks: int,
         type: str,
         uri: str,
-        external_ids: Optional[dict] = None,
-        copyrights: Optional[list["Copyright"]] = None,
-        genres: Optional[list[str]] = None,
+        external_ids: Optional[Dict] = None,
+        copyrights: Optional[List["Copyright"]] = None,
+        genres: Optional[List[str]] = None,
         label: Optional[str] = None,
         popularity: Optional[int] = None,
         tracks=None,

@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Union
 
 
 class Search:
@@ -17,7 +17,7 @@ class Search:
     def __init__(
         self,
         href: str,
-        items: list[object],
+        items: List[object],
         limit: int,
         next: Union[str, None],
         offset: int,
