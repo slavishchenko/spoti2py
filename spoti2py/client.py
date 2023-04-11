@@ -2,7 +2,7 @@ import asyncio
 import base64
 import datetime
 import logging
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 from urllib.parse import parse_qsl, urlencode
 
 import aiohttp
@@ -182,7 +182,7 @@ class Client:
         """Returns the key that will be used to parse json"""
         return f"{parse_qsl(query_params)[1][1]}s"
 
-    async def base_search(self, query_params) -> dict:
+    async def base_search(self, query_params) -> Dict:
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
         lookup_url = f"{endpoint}?{query_params}"
 
@@ -244,7 +244,7 @@ class Client:
 
     async def get_album_tracks(
         self, id: str, market: str = None, limit: int = 20
-    ) -> list[Track]:
+    ) -> List[Track]:
         """
         Get Spotify catalog information about an album's tracks.
         Optional parameters can be used to limit the number of tracks returned.
@@ -307,8 +307,8 @@ class Client:
         return artist
 
     async def get_artists_albums(
-        self, id: str, include_groups: Optional[list[str]] = None, limit: int = 20
-    ) -> list[Album]:
+        self, id: str, include_groups: Optional[List[str]] = None, limit: int = 20
+    ) -> List[Album]:
         """
         Get Spotify catalog information about an artist's albums.
 
@@ -336,7 +336,7 @@ class Client:
 
         return artists_albums
 
-    async def get_artists_top_tracks(self, id: str, market: str = None) -> list[Track]:
+    async def get_artists_top_tracks(self, id: str, market: str = None) -> List[Track]:
         """
         Get Spotify catalog information about an artist's top tracks by country.
 
@@ -361,7 +361,7 @@ class Client:
 
         return top_tracks
 
-    async def get_related_artists(self, id: str) -> list[Artist]:
+    async def get_related_artists(self, id: str) -> List[Artist]:
         """
         Get Spotify catalog information about artists similar to a given artist.
 
@@ -407,9 +407,9 @@ class Client:
     async def get_recommendations(
         self,
         limit: int = 20,
-        seed_artists: list[str] = None,
-        seed_genres: list[str] = None,
-        seed_tracks: list[str] = None,
+        seed_artists: List[str] = None,
+        seed_genres: List[str] = None,
+        seed_tracks: List[str] = None,
     ) -> Recommendations:
         """
         Recommendations are generated based on the available information or a given seed entity and matched against similar artists and tracks.
