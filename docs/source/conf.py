@@ -22,6 +22,7 @@ extensions = [
     "sphinx.ext.duration",
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
+    "sphinx_markdown_builder"
 ]
 
 templates_path = ["_templates"]
