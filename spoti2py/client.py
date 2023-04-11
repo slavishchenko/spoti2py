@@ -7,8 +7,8 @@ from urllib.parse import parse_qsl, urlencode
 
 import aiohttp
 
-from exceptions import InvalidCredentials, NoSearchQuery, SpotifyException
-from models import (
+from .exceptions import InvalidCredentials, NoSearchQuery, SpotifyException
+from .models import (
     Album,
     Artist,
     AudioAnalysis,
@@ -19,7 +19,7 @@ from models import (
     Search,
     Track,
 )
-from utils import parse_json
+from .utils import parse_json
 
 logger = logging.getLogger(__name__)
 

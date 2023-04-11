@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spoti2py"
+version = "0.0.1"
+authors = [
+    {name = "slavishchenko", email = "slavishchenko@gmail.com"},
+]
+description = "Simple, bare bones wrapper for the Spotify Web API."
+readme = "README.md"
+requires-python = ">=3.11.2"
+keywords = ["spotify", "python", "async", "library", "api", "api wrapper"]
+license = "MIT"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+dependencies = [
+  "aiohttp==3.8.4",
+]
+[project.urls]
+"Homepage" = "https://github.com/slavishchenko/spoti2py"
+"Bug Tracker" = "https://github.com/slavishchenko/spoti2pyissues"

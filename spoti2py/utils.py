@@ -1,4 +1,4 @@
-from exceptions.exceptions import InvalidItemType
+from .exceptions import InvalidItemType
 
 
 def parse_json(
