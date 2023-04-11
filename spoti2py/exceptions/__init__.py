@@ -4,3 +4,5 @@ from .exceptions import (
     NoSearchQuery,
     SpotifyException,
 )
+
+__all__ = ["InvalidCredentials", "InvalidItemType", "NoSearchQuery", "SpotifyException"]

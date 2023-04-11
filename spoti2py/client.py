@@ -209,7 +209,7 @@ class Client:
         :param search_type: Optional item type to search accross. Defaults to "track".
         :param limit: Maximum number of results to return. >= 0 <= 50. Default is 1.
         :raise exceptions.NoSearchQuery: If no query is provided.
-        :return: :class:`~models.Search`
+        :return: :py:class:`~spoti2py.models.search.Search`
         :rtype: object
         """
         if query == None:
@@ -230,8 +230,8 @@ class Client:
         """
         Get Spotify catalog information for a single album.
 
-        :param id: The Spotify ID of the album. Required."
-        :return: :class:`models.Album`
+        :param id: The Spotify ID of the album. Required.
+        :return: :py:class:`~spoti2py.models.album.Album`
         :rtype: object
         """
         album = parse_json(
@@ -249,14 +249,14 @@ class Client:
         Get Spotify catalog information about an album's tracks.
         Optional parameters can be used to limit the number of tracks returned.
 
-        :param id: The Spotify ID of the album.
+        :param id: The Spotify ID of the album. Required.
         :param market: An ISO 3166-1 alpha-2 country code.
                        If a country code is specified, only content that is available in that market will be returned.
                        If a valid user access token is specified in the request header,
                        the country associated with the user account will take priority over this parameter.
                        Default: us.
         :param limit: The maximum number of items to return. Default: 20. Min: 1. Max: 50.
-        :return: list[models.Track]
+        :return: list[:py:class:`~spoti2py.models.track.Track`]
         :rtype: list
         """
         query_params = {"id": id, "limit": limit}
@@ -280,6 +280,7 @@ class Client:
                         Provide this parameter if you want the list of returned items to be relevant to a particular country.
                         If omitted, the returned items will be relevant to all countries.
         :param limit: The maximum number of items to return. Default: 20. Min: 1. Max: 50.
+        :return: list[:py:class:`~spoti2py.models.album.Album`]
         """
         query_params = {"limit": limit}
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/browse/new-releases?{urlencode(query_params)}"
@@ -297,7 +298,7 @@ class Client:
         Get Spotify catalog information for a single artist identified by their unique Spotify ID.
 
         :param id: The Spotify ID of the artist. Required."
-        :return: :class:`models.Artist`
+        :return: :py:class:`~spoti2py.models.artist.Artist`
         :rtype: object
         """
         response = await self.get_resource(id, resource_type="artists")
@@ -316,8 +317,8 @@ class Client:
                                If not supplied, all album types will be returned.
                                Valid values: album, single, appears_on, compilation.
         :param limit: The maximum number of items to return. Default: 20. Min: 1. Max. 50.
-        :return: List(:class:`models.Artist`)
-        :rtype: List(:class:`models.Artist`)
+        :return: List[:py:class:`~spoti2py.models.album.Album`]
+        :rtype: List[object]
         """
         query_params = {"id": id, "limit": limit}
         if include_groups:
@@ -345,7 +346,7 @@ class Client:
                        If a valid user access token is specified in the request header,
                        the country associated with the user account will take priority over this parameter.
                        Default: us.
-        :return: list(models.Track)
+        :return: list[:py:class:`~spoti2py.models.track.Track`]
         :rtype: list[object]
         """
         if not market:
@@ -365,7 +366,7 @@ class Client:
         Get Spotify catalog information about artists similar to a given artist.
 
         :param id: The Spotify ID of the artist.
-        :return: list[models.Artist]
+        :return: list[:py:class:`~spoti2py.models.artist.Artist`]
         :type: list
         """
         endpoint = f"related-artists"
@@ -382,7 +383,7 @@ class Client:
         Get Spotify catalog information for a single track identified by its unique Spotify ID.
 
         :param id: The Spotify ID of the track. Required."
-        :return: :class:`models.Track`
+        :return: :py:class:`~spoti2py.models.track.Track`
         :rtype: object
         """
         response = await self.get_resource(id, resource_type="tracks")
@@ -396,7 +397,7 @@ class Client:
         The audio analysis describes the track’s structure and musical content, including rhythm, pitch, and timbre.
 
         :param id: The Spotify ID of the track. Required."
-        :return: :class:`models.AudioAnalysis`
+        :return: :py:class:`~spoti2py.models.audio_analysis.AudioAnalysis`
         :rtype: object
         """
         response = await self.get_resource(id, resource_type="audio-analysis")
@@ -420,12 +421,12 @@ class Client:
         :param seed_genres: A list of any genres in the set of available genre seeds.
                             available_genre_seeds is an attribute of the Client class.
         :param seed_tracks: A list of Spotify IDs fpr a seed track.
-        NOTE:
-            Up to 5 seed values may be provided in any combination of seed_artists, seed_tracks and seed_genres.
-            At least 1 is required!
 
-        :return: JSON object
-        :rtype: JSON
+        Up to 5 seed values may be provided in any combination of seed_artists, seed_tracks and seed_genres.
+        At least 1 is required!
+
+        :return: :py:class:`~spoti2py.models.recommendations.Recommendations`
+        :rtype: object
         """
 
         query_params = {"limit": limit}
