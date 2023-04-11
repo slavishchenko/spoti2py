@@ -64,8 +64,9 @@ async def main():
       )
       return zip(songs, analysis)
 
-songs, analysis = client.loop.run_until_complete(main())
-print(songs, analysis)
+response = client.loop.run_until_complete(main())
+for song, analysis in response:
+    print(f'{song.name} is played at {analysis.tempo} BPM')
 ```
 
 ##### Get full artist details
