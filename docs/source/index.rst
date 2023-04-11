@@ -119,23 +119,24 @@ API reference
 Methods
 -------
 
-.. automethod:: spoti2py.client.Client.search()
-.. automethod:: spoti2py.client.Client.get_album()
-.. automethod:: spoti2py.client.Client.get_album_tracks()
-.. automethod:: spoti2py.client.Client.get_new_releases()
-.. automethod:: spoti2py.client.Client.get_artist()
-.. automethod:: spoti2py.client.Client.get_artists_albums()
-.. automethod:: spoti2py.client.Client.get_artists_top_tracks()
-.. automethod:: spoti2py.client.Client.get_related_artists()
-.. automethod:: spoti2py.client.Client.get_track()
-.. automethod:: spoti2py.client.Client.get_audio_analysis()
-.. automethod:: spoti2py.client.Client.get_recommendations()
+.. py:currentmodule:: spoti2py.client
+.. automethod:: Client.search()
+.. automethod:: Client.get_album()
+.. automethod:: Client.get_album_tracks()
+.. automethod:: Client.get_new_releases()
+.. automethod:: Client.get_artist()
+.. automethod:: Client.get_artists_albums()
+.. automethod:: Client.get_artists_top_tracks()
+.. automethod:: Client.get_related_artists()
+.. automethod:: Client.get_track()
+.. automethod:: Client.get_audio_analysis()
+.. automethod:: Client.get_recommendations()
 
 
 Models
 ------
 
-.. automodule:: spoti2py.models
+.. py:currentmodule:: spoti2py.models
 .. autoclass:: Search
 .. autoclass:: Album
 .. autoclass:: Track
@@ -147,7 +148,7 @@ Models
 Exceptions
 ----------
 
-.. automodule:: spoti2py.exceptions
+.. py:currentmodule:: spoti2py.exceptions
 .. autoexception:: NoSearchQuery
 .. autoexception:: InvalidCredentials
 .. autoexception:: InvalidItemType
