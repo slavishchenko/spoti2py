@@ -1,12 +1,12 @@
+import asyncio
 import base64
 import datetime
 import logging
 from typing import Optional
 from urllib.parse import parse_qsl, urlencode
 
-import requests
+import aiohttp
 
-from _handlers import exception_handler
 from exceptions import InvalidCredentials, NoSearchQuery, SpotifyException
 from models import (
     Album,
@@ -63,7 +63,17 @@ class Client:
             )
         self.client_id = client_id
         self.client_secret = client_secret
-        self._session = requests.Session()
+        self.loop = asyncio.new_event_loop()
+        self._session = aiohttp.ClientSession(loop=self.loop)
+
+    async def close(self) -> None:
+        await self._session.close()
+
+    async def __aenter__(self) -> "Client":
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        await self.close()
 
     def get_client_credentials(self) -> str:
         """
@@ -72,7 +82,7 @@ class Client:
         client_id = self.client_id
         client_secret = self.client_secret
         if client_id is None or client_secret is None:
-            raise Exception("You must provide client_id and client_secret")
+            raise InvalidCredentials("You must provide client_id and client_secret")
         client_credentials = f"{client_id}:{client_secret}"
         client_credentials_b64 = base64.b64encode(client_credentials.encode())
         return client_credentials_b64.decode()
@@ -83,14 +93,17 @@ class Client:
     def get_token_data(self) -> dict:
         return {"grant_type": "client_credentials"}
 
-    def authenticate(self) -> bool:
+    async def authenticate(self) -> bool:
         token_url = self.token_url
         token_data = self.get_token_data()
         token_headers = self.get_token_headers()
-        r = self._session.post(token_url, data=token_data, headers=token_headers)
-        if r.status_code not in range(200, 299):
-            raise Exception("Authentication failed!")
-        data = r.json()
+
+        async with self._session.post(
+            token_url, data=token_data, headers=token_headers
+        ) as response:
+            response.raise_for_status()
+            data = await response.json()
+
         now = datetime.datetime.now()
         access_token = data["access_token"]
         expires_in = data["expires_in"]
@@ -98,29 +111,46 @@ class Client:
         self.access_token = access_token
         self.access_token_expires = expires
         self.access_token_expired = expires < now
+
         return True
 
-    def get_access_token(self) -> str:
+    async def get_access_token(self) -> str:
         token = self.access_token
         expires = self.access_token_expires
         now = datetime.datetime.now()
         if expires < now:
-            self.authenticate()
-            return self.get_access_token()
+            await self.authenticate()
+            return await self.get_access_token()
         elif token == None:
-            self.authenticate()
-            return self.get_access_token()
+            await self.authenticate()
+            return await self.get_access_token()
         return token
 
-    def get_resource_headers(self) -> dict:
-        access_token = self.get_access_token()
+    async def get_resource_headers(self) -> dict:
+        access_token = await self.get_access_token()
         headers = {"Authorization": f"Bearer {access_token}"}
         return headers
 
-    def _get(self, endpoint: str, headers: str):
-        return self._session.get(endpoint, headers=headers)
+    async def _get(self, endpoint: str):
+        headers = await self.get_resource_headers()
+        async with self._session.get(endpoint, headers=headers) as response:
+            if response.status not in range(200, 299):
+                try:
+                    json_response = await response.json()
+                    error = json_response.get("error", {})
+                    msg = error.get("message")
+                except ValueError:
+                    msg = response.text or None
 
-    def get_resource(
+                logger.error(
+                    f"HTTP {response.status} Error returned for {endpoint}. Reason: {msg}"
+                )
+
+                raise SpotifyException(response.status, endpoint, msg)
+            data = await response.json()
+        return data
+
+    async def get_resource(
         self,
         lookup_id: str,
         resource_type: str = "tracks",
@@ -139,53 +169,33 @@ class Client:
         """
         if not version:
             version = self.CURRENT_API_VERSION
-
         endpoint = f"{self.API_URL}{version}/{resource_type}/{lookup_id}"
 
         if query_params:
             endpoint = f"{endpoint}/{query_params}"
 
-        headers = self.get_resource_headers()
-        try:
-            r = self._get(endpoint=endpoint, headers=headers)
-            r.raise_for_status()
-            logger.debug(r.json())
-            return r.json()
-        except requests.exceptions.HTTPError as e:
-            msg = exception_handler(e)
-            
-            logger.error(f'HTTP {r.status_code} Error returned for {endpoint}. Reason: {msg}')
-
-            raise SpotifyException(r.status_code, endpoint, msg)
+        response = await self._get(endpoint=endpoint)
+        return response
 
     @staticmethod
     def _get_json_lookup_key(query_params: str):
         """Returns the key that will be used to parse json"""
         return f"{parse_qsl(query_params)[1][1]}s"
 
-    def base_search(self, query_params) -> dict:
-        headers = self.get_resource_headers()
+    async def base_search(self, query_params) -> dict:
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/search"
         lookup_url = f"{endpoint}?{query_params}"
 
-        try:
-            r = self._get(endpoint=lookup_url, headers=headers)
-            r.raise_for_status()
+        response = await self._get(endpoint=lookup_url)
 
-            logger.debug(r.json())
+        search_type = self._get_json_lookup_key(query_params)
+        search_result = Search(**response[search_type])
+        search_result.items = parse_json(
+            item_type=search_type, json_response=search_result.items, models=MODELS
+        )
+        return search_result
 
-            search_type = self._get_json_lookup_key(query_params)
-            search_result = Search(**r.json()[search_type])
-            search_result.items = parse_json(
-                item_type=search_type, json_response=search_result.items, models=MODELS
-            )
-            return search_result
-        except requests.exceptions.HTTPError as e:
-            msg = exception_handler(e)
-            logger.error(f'HTTP {r.status_code} Error returned for {lookup_url}. Reason: {msg}')
-            raise SpotifyException(r.status_code, lookup_url, msg)
-
-    def search(
+    async def search(
         self,
         query: str,
         search_type: str | list = None,
@@ -211,12 +221,12 @@ class Client:
             search_type = ",".join([type.lower() for type in search_type])
         if isinstance(search_type, str):
             search_type = search_type.lower()
-
         query_params = urlencode({"q": query, "type": search_type, "limit": limit})
+        search_results = await self.base_search(query_params)
 
-        return self.base_search(query_params)
+        return search_results
 
-    def get_album(self, id: str) -> Album:
+    async def get_album(self, id: str) -> Album:
         """
         Get Spotify catalog information for a single album.
 
@@ -226,13 +236,13 @@ class Client:
         """
         album = parse_json(
             item_type="albums",
-            json_response=self.get_resource(id, resource_type="albums"),
+            json_response=await self.get_resource(id, resource_type="albums"),
             models=MODELS,
         )
         album.tracks = [Track(**song) for song in album.tracks["items"]]
         return album
 
-    def get_album_tracks(
+    async def get_album_tracks(
         self, id: str, market: str = None, limit: int = 20
     ) -> list[Track]:
         """
@@ -255,14 +265,14 @@ class Client:
         query_params["market"] = market
 
         endpoint = f"tracks"
-        album_tracks = self.get_resource(
+        album_tracks = await self.get_resource(
             lookup_id=id, resource_type="albums", query_params=endpoint
         )
         return parse_json(
             item_type="tracks", json_response=album_tracks["items"], models=MODELS
         )
 
-    def get_new_releases(self, country: str = None, limit: int = 20):
+    async def get_new_releases(self, country: str = None, limit: int = 20):
         """
         Get a list of new album releases featured in Spotify
 
@@ -277,15 +287,12 @@ class Client:
             query_params["country"] = country
             endpoint = f"{endpoint}{urlencode(query_params)}"
 
-        headers = self.get_resource_headers()
-        r = self._get(endpoint=endpoint, headers=headers)
+        response = await self._get(endpoint=endpoint)
 
-        if not r.status_code in range(200, 299):
-            return r.text
-        new_releases = r.json()["albums"]["items"]
+        new_releases = response["albums"]["items"]
         return parse_json(item_type="albums", json_response=new_releases, models=MODELS)
 
-    def get_artist(self, id: str) -> Artist:
+    async def get_artist(self, id: str) -> Artist:
         """
         Get Spotify catalog information for a single artist identified by their unique Spotify ID.
 
@@ -293,13 +300,12 @@ class Client:
         :return: :class:`models.Artist`
         :rtype: object
         """
-        return parse_json(
-            item_type="artists",
-            json_response=self.get_resource(id, resource_type="artists"),
-            models=MODELS,
-        )
+        response = await self.get_resource(id, resource_type="artists")
+        artist = parse_json(item_type="artists", json_response=response, models=MODELS)
 
-    def get_artists_albums(
+        return artist
+
+    async def get_artists_albums(
         self, id: str, include_groups: Optional[list[str]] = None, limit: int = 20
     ) -> list[Album]:
         """
@@ -314,25 +320,22 @@ class Client:
         :rtype: List(:class:`models.Artist`)
         """
         query_params = {"id": id, "limit": limit}
-
         if include_groups:
             if not isinstance(include_groups, list):
                 raise TypeError("include_groups should be a list of strings.")
             query_params["include_groups"] = ",".join(include_groups)
-
         endpoint = f"albums?{urlencode(query_params)}"
 
-        artists_albums = self.get_resource(
+        response = await self.get_resource(
             lookup_id=id, resource_type="artists", query_params=endpoint
-        )["items"]
-
-        return parse_json(
-            item_type="albums",
-            json_response=artists_albums,
-            models=MODELS,
+        )
+        artists_albums = parse_json(
+            item_type="albums", json_response=response["items"], models=MODELS
         )
 
-    def get_artists_top_tracks(self, id: str, market: str = None) -> list[Track]:
+        return artists_albums
+
+    async def get_artists_top_tracks(self, id: str, market: str = None) -> list[Track]:
         """
         Get Spotify catalog information about an artist's top tracks by country.
 
@@ -348,18 +351,16 @@ class Client:
         if not market:
             market = "us"
         endpoint = f"top-tracks?market={market}"
-
-        top_tracks = self.get_resource(
+        response = await self.get_resource(
             lookup_id=id, resource_type="artists", query_params=endpoint
-        )["tracks"]
-
-        return parse_json(
-            item_type="tracks",
-            json_response=top_tracks,
-            models=MODELS,
+        )
+        top_tracks = parse_json(
+            item_type="tracks", json_response=response["tracks"], models=MODELS
         )
 
-    def get_related_artists(self, id: str) -> list[Artist]:
+        return top_tracks
+
+    async def get_related_artists(self, id: str) -> list[Artist]:
         """
         Get Spotify catalog information about artists similar to a given artist.
 
@@ -368,14 +369,15 @@ class Client:
         :type: list
         """
         endpoint = f"related-artists"
-        related_artists = self.get_resource(
+        response = await self.get_resource(
             lookup_id=id, resource_type="artists", query_params=endpoint
         )
-        return parse_json(
-            item_type="artists", json_response=related_artists["artists"], models=MODELS
+        related_artists = parse_json(
+            item_type="artists", json_response=response["artists"], models=MODELS
         )
+        return related_artists
 
-    def get_track(self, id: str) -> Track:
+    async def get_track(self, id: str) -> Track:
         """
         Get Spotify catalog information for a single track identified by its unique Spotify ID.
 
@@ -383,13 +385,12 @@ class Client:
         :return: :class:`models.Track`
         :rtype: object
         """
-        return parse_json(
-            item_type="tracks",
-            json_response=self.get_resource(id, resource_type="tracks"),
-            models=MODELS,
-        )
+        response = await self.get_resource(id, resource_type="tracks")
+        track = parse_json(item_type="tracks", json_response=response, models=MODELS)
 
-    def get_audio_analysis(self, id: str) -> AudioAnalysis:
+        return track
+
+    async def get_audio_analysis(self, id: str) -> AudioAnalysis:
         """
         Get low-level audio analysis for a track in the Spotify catalog.
         The audio analysis describes the track’s structure and musical content, including rhythm, pitch, and timbre.
@@ -398,11 +399,11 @@ class Client:
         :return: :class:`models.AudioAnalysis`
         :rtype: object
         """
-        return AudioAnalysis(
-            **self.get_resource(id, resource_type="audio-analysis")["track"]
-        )
+        response = await self.get_resource(id, resource_type="audio-analysis")
+        audio_analysis = response["track"]
+        return AudioAnalysis(**audio_analysis)
 
-    def get_recommendations(
+    async def get_recommendations(
         self,
         limit: int = 20,
         seed_artists: list[str] = None,
@@ -428,7 +429,6 @@ class Client:
         """
 
         query_params = {"limit": limit}
-
         args = [
             ("seed_artists", seed_artists),
             ("seed_genres", seed_genres),
@@ -447,20 +447,16 @@ class Client:
                 )
 
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/?{urlencode(query_params)}"
-        headers = self.get_resource_headers()
+        response = await self._get(endpoint)
 
-        r = self._get(endpoint, headers=headers)
-        if r.status_code not in range(200, 299):
-            return r.text
-
-        recommendations = Recommendations(**r.json())
+        recommendations = Recommendations(**response)
         recommendations.tracks = parse_json(
             item_type="tracks", json_response=recommendations.tracks, models=MODELS
         )
         return recommendations
 
     @property
-    def available_genre_seeds(self):
+    async def available_genre_seeds(self):
         """
         A list of available genres seed parameter values for recommendations.
 
@@ -468,5 +464,5 @@ class Client:
         :rtype: list[str]
         """
         endpoint = f"{self.API_URL}{self.CURRENT_API_VERSION}/recommendations/available-genre-seeds"
-        headers = self.get_resource_headers()
-        return self._get(endpoint=endpoint, headers=headers).json()["genres"]
+        available_genre_seeds = await self._get(endpoint=endpoint).json()["genres"]
+        return available_genre_seeds
