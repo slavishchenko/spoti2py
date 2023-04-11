@@ -42,7 +42,7 @@ class Artist:
         followers: Optional[list[Followers]] = None,
         genres: Optional[list] = None,
         images: Optional[list[Image]] = None,
-        popularity = None,
+        popularity=None,
     ) -> None:
         self.external_urls = external_urls
         self.href = href
