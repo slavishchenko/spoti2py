@@ -37,7 +37,6 @@ class Album:
 
     def __init__(
         self,
-        album_group: str,
         album_type: str,
         artists: List[Artist],
         available_markets: List[str],
@@ -51,6 +50,7 @@ class Album:
         total_tracks: int,
         type: str,
         uri: str,
+        album_group: Optional[str] = None,
         external_ids: Optional[Dict] = None,
         copyrights: Optional[List["Copyright"]] = None,
         genres: Optional[List[str]] = None,
